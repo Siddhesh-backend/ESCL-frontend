@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #060f22;
+  --color-navy-900: #0b1f3a;
+  --color-navy-800: #122c50;
+  --color-navy-700: #1c3d69;
+  --color-navy-100: #e7ecf5;
+
+  --color-orange-600: #d6480f;
+  --color-orange-500: #e85d25;
+  --color-orange-400: #f2793f;
+  --color-orange-100: #fde9dc;
+
+  --color-pitch-50: #f7f8fa;
+  --color-pitch-100: #eef1f5;
+
+  --color-win: #1c8a53;
+  --color-loss: #c93636;
+
+  --font-display: "Barlow Condensed", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); color: var(--color-navy-900); background-color: #ffffff; }
+h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: 0.01em; }
+.stat-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-navy-700); border-radius: 999px; }
+.focus-ring:focus-visible { outline: 2px solid var(--color-orange-500); outline-offset: 2px; }
