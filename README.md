@@ -471,3 +471,38 @@ contact enquiry handling.
 
 The project demonstrates full-stack application development using React,
 Spring Boot, REST APIs, session-based authentication and MySQL.
+
+## Screenshots
+
+### Home Page
+![Home Page](./public/screenshots/home.png)
+
+### Login Page
+![Login Page](./public/screenshots/login.png)
+
+### Player Registration
+![Player Registration](./public/screenshots/register.png)
+
+### Player Management
+![Player Management](./public/screenshots/player.png)
+
+### Schedule
+![Schedule](./public/screenshots/schedule.png)
+
+### Schedule Details
+![Schedule Details](./public/screenshots/scheduleview.png)
+
+### Series
+![Series](./public/screenshots/series.png)
+
+### Series Details
+![Series Details](./public/screenshots/seriesview.png)
+
+### Points Table
+![Points Table](./public/screenshots/pointTable.png)
+
+### Contact Page
+![Contact Page](./public/screenshots/contact.png)
+
+### Admin Dashboard
+![Admin Dashboard](./public/screenshots/dashboard.png)
