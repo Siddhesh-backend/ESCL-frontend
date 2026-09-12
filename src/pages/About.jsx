@@ -91,126 +91,65 @@ export default function About() {
 {/* GALLERY */}
 <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
   <h2 className="mb-6 font-display text-2xl font-bold text-navy-900">
-    Gallery
+    ESCL Cricket Videos
   </h2>
 
-  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
-    {/* Gallery Image 1 */}
-    <div
-      className="
-        group
-        aspect-square
-        overflow-hidden
-        rounded-2xl
-        border border-navy-100
-        bg-pitch-50
-        shadow-sm
-        transition-all duration-300
-        hover:-translate-y-1
-        hover:shadow-lg
-      "
-    >
-      <img
-        src="/gallery-1.jpg"
-        alt="ESCL Gallery"
-        className="
-          h-full
-          w-full
-          object-cover
-          transition-transform duration-500
-          group-hover:scale-105
-        "
-      />
+    {/* Video 1 */}
+    <div className="group overflow-hidden rounded-2xl border border-navy-100 bg-pitch-50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="aspect-square">
+        <iframe
+          className="h-full w-full"
+          src="https://www.youtube.com/embed/trrHDQuLBuA"
+          title="Legends League Cricket Match Highlights"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
     </div>
 
-    {/* Gallery Image 2 */}
-    <div
-      className="
-        group
-        aspect-square
-        overflow-hidden
-        rounded-2xl
-        border border-navy-100
-        bg-pitch-50
-        shadow-sm
-        transition-all duration-300
-        hover:-translate-y-1
-        hover:shadow-lg
-      "
-    >
-      <img
-        src="/gallery-2.jpg"
-        alt="ESCL Gallery"
-        className="
-          h-full
-          w-full
-          object-cover
-          transition-transform duration-500
-          group-hover:scale-105
-        "
-      />
+    {/* Video 2 */}
+    <div className="group overflow-hidden rounded-2xl border border-navy-100 bg-pitch-50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="aspect-square">
+        <iframe
+          className="h-full w-full"
+          src="https://www.youtube.com/embed/X56V0LhoDw4"
+          title="Legends League Cricket Match Highlights"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
     </div>
 
-    {/* HOME IMAGE — Stadium Only */}
-    <div
-      className="
-        group
-        aspect-square
-        overflow-hidden
-        rounded-2xl
-        border border-navy-100
-        bg-pitch-50
-        shadow-sm
-        transition-all duration-300
-        hover:-translate-y-1
-        hover:shadow-lg
-      "
-    >
-      <img
-        src="/escl-stadium-hero.png"
-        alt="ESCL Stadium"
-        className="
-          h-full
-          w-full
-          object-cover
-          scale-[1.65]
-          object-center
-          transition-transform duration-500
-          group-hover:scale-[1.72]
-        "
-      />
+    {/* Video 3 */}
+    <div className="group overflow-hidden rounded-2xl border border-navy-100 bg-pitch-50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="aspect-square">
+        <iframe
+          className="h-full w-full"
+          src="https://www.youtube.com/embed/Tj9xPsdcxJM"
+          title="ICC Cricket World Cup Celebration"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
     </div>
 
-    {/* SCHEDULE IMAGE — Helmet Only */}
-    <div
-      className="
-        group
-        aspect-square
-        overflow-hidden
-        rounded-2xl
-        border border-navy-100
-        bg-pitch-50
-        shadow-sm
-        transition-all duration-300
-        hover:-translate-y-1
-        hover:shadow-lg
-      "
-    >
-      <img
-        src="/schedule-bg.jpg
-        "
-        alt="ESCL Cricket Helmet"
-        className="
-          h-full
-          w-full
-          object-cover
-          scale-[1.85]
-          object-[95%_80%]
-          transition-transform duration-500
-          group-hover:scale-[1.85]
-        "
-      />
+    {/* Video 4 */}
+    <div className="group overflow-hidden rounded-2xl border border-navy-100 bg-pitch-50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="aspect-square">
+        <iframe
+          className="h-full w-full"
+          src="https://www.youtube.com/embed/ShGUTA2WZOM"
+          title="Entertainers Cricket League Promo"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
     </div>
 
   </div>
