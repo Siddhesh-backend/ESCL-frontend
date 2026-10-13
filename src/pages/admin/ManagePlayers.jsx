@@ -1,5 +1,9 @@
+
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users } from 'lucide-react'
+import { Plus, Eye, Trash2, Users, FileDown } from 'lucide-react'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 import playerService from '../../services/playerService'
 import useFetch from '../../hooks/useFetch'
 import useDebounce from '../../hooks/useDebounce'
@@ -32,6 +36,22 @@ const EMPTY_FORM = {
   paymentMethod: '',
 }
 
+const PDF_COLUMNS = [
+  { header: 'Name', dataKey: 'name' },
+  { header: 'Email', dataKey: 'email' },
+  { header: 'College', dataKey: 'college' },
+  { header: 'Branch', dataKey: 'branch' },
+  { header: 'Position', dataKey: 'position' },
+]
+
+const getPlayerName = (player) =>
+  player?.fullName || player?.name || '-'
+
+const getPlayerValue = (value) =>
+  value === null || value === undefined || value === ''
+    ? '-'
+    : String(value)
+
 export default function ManagePlayers() {
   const { data, loading, error, refetch } = useFetch(
     () => playerService.getAll(),
@@ -44,60 +64,36 @@ export default function ManagePlayers() {
   const debouncedSearch = useDebounce(search)
 
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
-
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
 
+  const [viewTarget, setViewTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const filtered = useMemo(() => {
-    const list = data || []
+  const players = Array.isArray(data) ? data : []
 
+  const filtered = useMemo(() => {
     if (!debouncedSearch) {
-      return list
+      return players
     }
 
     const searchValue = debouncedSearch.toLowerCase()
 
-    return list.filter((p) => {
-      const name = (p.fullName || p.name || '').toLowerCase()
-      const email = (p.email || '').toLowerCase()
+    return players.filter((player) => {
+      const name = getPlayerName(player).toLowerCase()
+      const email = (player.email || '').toLowerCase()
 
       return (
         name.includes(searchValue) ||
         email.includes(searchValue)
       )
     })
-  }, [data, debouncedSearch])
+  }, [players, debouncedSearch])
 
   function openCreate() {
-    setEditingId(null)
     setForm({ ...EMPTY_FORM })
-    setErrors({})
-    setModalOpen(true)
-  }
-
-  function openEdit(player) {
-    setEditingId(player.id)
-
-    setForm({
-      fullName: player.fullName || player.name || '',
-      collegeName: player.collegeName || '',
-      branch: player.branch || '',
-      year: player.year || '',
-      dob: player.dob || '',
-      position: player.position || '',
-      experience: player.experience || '',
-      cricheroesUrl: player.cricheroesUrl || '',
-      basePrice: player.basePrice ?? '',
-      email: player.email || '',
-      password: '',
-      paymentMethod: player.paymentMethod || '',
-    })
-
     setErrors({})
     setModalOpen(true)
   }
@@ -152,7 +148,7 @@ export default function ManagePlayers() {
       next.paymentMethod = 'Payment method is required'
     }
 
-    if (!editingId && !minLength(form.password, 6)) {
+    if (!minLength(form.password, 6)) {
       next.password = 'Min 6 characters'
     }
 
@@ -167,34 +163,15 @@ export default function ManagePlayers() {
     setSaving(true)
 
     try {
-      if (editingId) {
-        const updatePayload = {
-          fullName: form.fullName,
-          collegeName: form.collegeName,
-          branch: form.branch,
-          year: form.year,
-          dob: form.dob,
-          position: form.position,
-          experience: form.experience,
-          cricheroesUrl: form.cricheroesUrl,
-          basePrice: form.basePrice,
-          email: form.email,
-          paymentMethod: form.paymentMethod,
-        }
+      await playerService.create(form)
 
-        await playerService.update(editingId, updatePayload)
-
-        showToast('Player updated successfully', 'success')
-      } else {
-        await playerService.create(form)
-
-        showToast('Player created successfully', 'success')
-      }
-
+      showToast('Player created successfully', 'success')
       setModalOpen(false)
+      setForm({ ...EMPTY_FORM })
+      setErrors({})
       refetch()
     } catch (err) {
-      showToast(err.message || 'Save failed', 'error')
+      showToast(err.message || 'Player creation failed', 'error')
     } finally {
       setSaving(false)
     }
@@ -209,7 +186,6 @@ export default function ManagePlayers() {
       await playerService.remove(deleteTarget.id)
 
       showToast('Player deleted successfully', 'success')
-
       setDeleteTarget(null)
       refetch()
     } catch (err) {
@@ -219,30 +195,95 @@ export default function ManagePlayers() {
     }
   }
 
+  function handleDownloadPdf() {
+    if (loading || error) {
+      showToast(
+        'Please wait until the players list loads successfully.',
+        'error'
+      )
+      return
+    }
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    })
+
+    doc.setFontSize(16)
+    doc.text('ESCL - Registered Players', 14, 15)
+
+    autoTable(doc, {
+      columns: PDF_COLUMNS,
+      body: players.map((player) => ({
+        name: getPlayerName(player),
+        email: getPlayerValue(player.email),
+        college: getPlayerValue(player.collegeName),
+        branch: getPlayerValue(player.branch),
+        position: getPlayerValue(player.position),
+      })),
+      startY: 22,
+      margin: {
+        top: 15,
+        right: 14,
+        bottom: 18,
+        left: 14,
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fontStyle: 'bold',
+      },
+      showHead: 'everyPage',
+    })
+
+    const totalText = `Total Registered Players: ${players.length}`
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const finalY = doc.lastAutoTable.finalY
+    const footerSpace = 12
+
+    let totalY = finalY + 9
+
+    if (totalY > pageHeight - footerSpace) {
+      doc.addPage()
+      totalY = 18
+    }
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(totalText, 14, totalY)
+
+    doc.save('ESCL_Registered_Players.pdf')
+  }
+
   const columns = [
     {
       key: 'fullName',
       label: 'Name',
-      render: (row) => row.fullName || row.name || '-',
+      render: (row) => getPlayerName(row),
     },
     {
       key: 'email',
       label: 'Email',
+      render: (row) => getPlayerValue(row.email),
     },
     {
       key: 'collegeName',
       label: 'College',
-      render: (row) => row.collegeName || '-',
+      render: (row) => getPlayerValue(row.collegeName),
     },
     {
       key: 'branch',
       label: 'Branch',
-      render: (row) => row.branch || '-',
+      render: (row) => getPlayerValue(row.branch),
     },
     {
       key: 'position',
       label: 'Position',
-      render: (row) => row.position || '-',
+      render: (row) => getPlayerValue(row.position),
     },
     {
       key: 'actions',
@@ -250,17 +291,21 @@ export default function ManagePlayers() {
       render: (row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => openEdit(row)}
+            type="button"
+            onClick={() => setViewTarget(row)}
             className="focus-ring rounded-lg p-1.5 text-navy-700 hover:bg-navy-100"
-            aria-label="Edit"
+            aria-label={`View ${getPlayerName(row)}`}
+            title="View Player"
           >
-            <Pencil size={16} />
+            <Eye size={16} />
           </button>
 
           <button
+            type="button"
             onClick={() => setDeleteTarget(row)}
             className="focus-ring rounded-lg p-1.5 text-loss hover:bg-red-50"
-            aria-label="Delete"
+            aria-label={`Delete ${getPlayerName(row)}`}
+            title="Delete Player"
           >
             <Trash2 size={16} />
           </button>
@@ -269,9 +314,22 @@ export default function ManagePlayers() {
     },
   ]
 
+  const detailFields = [
+    { label: 'Full Name', value: viewTarget ? getPlayerName(viewTarget) : '-' },
+    { label: 'Email', value: viewTarget?.email },
+    { label: 'College', value: viewTarget?.collegeName },
+    { label: 'Branch', value: viewTarget?.branch },
+    { label: 'Year of Study', value: viewTarget?.year },
+    { label: 'Date of Birth', value: viewTarget?.dob },
+    { label: 'Playing Position', value: viewTarget?.position },
+    { label: 'Experience', value: viewTarget?.experience },
+    { label: 'CricHeroes URL', value: viewTarget?.cricheroesUrl },
+    { label: 'Base Price', value: viewTarget?.basePrice },
+    { label: 'Payment Method', value: viewTarget?.paymentMethod },
+  ]
+
   return (
     <div className="p-6 sm:p-8">
-
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -280,14 +338,28 @@ export default function ManagePlayers() {
           </h1>
 
           <p className="text-sm text-navy-700/70">
-            Create, edit and remove player registrations.
+            View, register and remove player registrations.
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-navy-700">
+            Total Registered Players: {players.length}
           </p>
         </div>
 
-        <Button variant="primary" onClick={openCreate}>
-          <Plus size={16} />
-          Add Player
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="ghost"
+            onClick={handleDownloadPdf}
+          >
+            <FileDown size={16} />
+            Download PDF
+          </Button>
+
+          <Button variant="primary" onClick={openCreate}>
+            <Plus size={16} />
+            Add Player
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -310,7 +382,7 @@ export default function ManagePlayers() {
         />
       )}
 
-      {/* Table */}
+      {/* Players Table */}
       {!loading && !error && (
         <Table
           columns={columns}
@@ -319,7 +391,7 @@ export default function ManagePlayers() {
         />
       )}
 
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && players.length === 0 && (
         <div className="mt-4">
           <EmptyState
             icon={Users}
@@ -329,11 +401,11 @@ export default function ManagePlayers() {
         </div>
       )}
 
-      {/* Add / Edit Player Modal */}
+      {/* Add Player Modal */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingId ? 'Edit Player' : 'Add Player'}
+        title="Add Player"
         footer={
           <>
             <Button
@@ -348,21 +420,18 @@ export default function ManagePlayers() {
               loading={saving}
               onClick={handleSave}
             >
-              {editingId ? 'Save Changes' : 'Create Player'}
+              Create Player
             </Button>
           </>
         }
       >
         <div className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-2">
-
           <Input
             id="p-fullName"
             label="Full Name"
             value={form.fullName}
             error={errors.fullName}
-            onChange={(e) =>
-              update('fullName', e.target.value)
-            }
+            onChange={(e) => update('fullName', e.target.value)}
           />
 
           <Input
@@ -370,9 +439,7 @@ export default function ManagePlayers() {
             label="College / University Name"
             value={form.collegeName}
             error={errors.collegeName}
-            onChange={(e) =>
-              update('collegeName', e.target.value)
-            }
+            onChange={(e) => update('collegeName', e.target.value)}
           />
 
           <Input
@@ -380,9 +447,7 @@ export default function ManagePlayers() {
             label="Branch"
             value={form.branch}
             error={errors.branch}
-            onChange={(e) =>
-              update('branch', e.target.value)
-            }
+            onChange={(e) => update('branch', e.target.value)}
           />
 
           <Input
@@ -390,9 +455,7 @@ export default function ManagePlayers() {
             label="Year of Study"
             value={form.year}
             error={errors.year}
-            onChange={(e) =>
-              update('year', e.target.value)
-            }
+            onChange={(e) => update('year', e.target.value)}
           />
 
           <Input
@@ -401,9 +464,7 @@ export default function ManagePlayers() {
             type="date"
             value={form.dob}
             error={errors.dob}
-            onChange={(e) =>
-              update('dob', e.target.value)
-            }
+            onChange={(e) => update('dob', e.target.value)}
           />
 
           <Input
@@ -411,9 +472,7 @@ export default function ManagePlayers() {
             label="Preferred Playing Position"
             value={form.position}
             error={errors.position}
-            onChange={(e) =>
-              update('position', e.target.value)
-            }
+            onChange={(e) => update('position', e.target.value)}
           />
 
           <Input
@@ -421,9 +480,7 @@ export default function ManagePlayers() {
             label="Level of Cricket Experience"
             value={form.experience}
             error={errors.experience}
-            onChange={(e) =>
-              update('experience', e.target.value)
-            }
+            onChange={(e) => update('experience', e.target.value)}
           />
 
           <Input
@@ -432,9 +489,7 @@ export default function ManagePlayers() {
             type="url"
             value={form.cricheroesUrl}
             error={errors.cricheroesUrl}
-            onChange={(e) =>
-              update('cricheroesUrl', e.target.value)
-            }
+            onChange={(e) => update('cricheroesUrl', e.target.value)}
           />
 
           <Input
@@ -442,9 +497,7 @@ export default function ManagePlayers() {
             label="Base Price"
             type="number"
             value={form.basePrice}
-            onChange={(e) =>
-              update('basePrice', e.target.value)
-            }
+            onChange={(e) => update('basePrice', e.target.value)}
           />
 
           <Input
@@ -452,9 +505,7 @@ export default function ManagePlayers() {
             label="Payment Method"
             value={form.paymentMethod}
             error={errors.paymentMethod}
-            onChange={(e) =>
-              update('paymentMethod', e.target.value)
-            }
+            onChange={(e) => update('paymentMethod', e.target.value)}
           />
 
           <Input
@@ -463,25 +514,60 @@ export default function ManagePlayers() {
             type="email"
             value={form.email}
             error={errors.email}
-            onChange={(e) =>
-              update('email', e.target.value)
-            }
+            onChange={(e) => update('email', e.target.value)}
           />
 
-          {/* Password only for creating a new player */}
-          {!editingId && (
-            <Input
-              id="p-password"
-              label="Password"
-              type="password"
-              value={form.password}
-              error={errors.password}
-              onChange={(e) =>
-                update('password', e.target.value)
-              }
-            />
-          )}
+          <Input
+            id="p-password"
+            label="Password"
+            type="password"
+            value={form.password}
+            error={errors.password}
+            onChange={(e) => update('password', e.target.value)}
+          />
+        </div>
+      </Modal>
 
+      {/* View Player Modal - Read Only */}
+      <Modal
+        open={!!viewTarget}
+        onClose={() => setViewTarget(null)}
+        title="Player Details"
+        footer={
+          <Button
+            variant="ghost"
+            onClick={() => setViewTarget(null)}
+          >
+            Close
+          </Button>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          {detailFields.map(({ label, value }) => (
+            <div
+              key={label}
+              className="rounded-lg border border-navy-100 p-3"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-navy-700/60">
+                {label}
+              </p>
+
+              {label === 'CricHeroes URL' && value ? (
+                <a
+                  href={String(value)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block break-all text-sm text-orange-600 underline"
+                >
+                  Open Profile
+                </a>
+              ) : (
+                <p className="mt-1 break-words text-sm font-medium text-navy-900">
+                  {getPlayerValue(value)}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       </Modal>
 
@@ -512,12 +598,11 @@ export default function ManagePlayers() {
         <p className="text-sm text-navy-700">
           Are you sure you want to delete{' '}
           <strong>
-            {deleteTarget?.fullName || deleteTarget?.name}
+            {getPlayerName(deleteTarget)}
           </strong>
           ? This action cannot be undone.
         </p>
       </Modal>
-
     </div>
   )
 }
