@@ -37,8 +37,8 @@ export default function PointsTable() {
       !debouncedSearch
         ? true
         : r.teamName
-            ?.toLowerCase()
-            .includes(debouncedSearch.toLowerCase())
+          ?.toLowerCase()
+          .includes(debouncedSearch.toLowerCase())
     )
 
     list = [...list].sort((a, b) => {
@@ -69,6 +69,59 @@ export default function PointsTable() {
   return (
     <div className="bg-slate-50">
 
+      {/* ICCL 2026 Demo Tournament */}
+      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-[#071b33] via-[#102e50] to-[#071b33] p-5 text-white sm:p-7">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+              <div>
+                <span className="inline-flex rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-300">
+                </span>
+
+                <h2 className="mt-3 text-2xl font-extrabold sm:text-3xl">
+                  ICCL <span className="text-orange-400">2026</span>
+                </h2>
+
+                <p className="mt-2 text-sm text-white/80 sm:text-base">
+                  Inter College Championship League
+                </p>
+
+                <p className="mt-2 text-sm text-white/60">
+                  Pune · 13–15 October 2026 · 83 Cricket Ground
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:min-w-64">
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-orange-400">24</p>
+                  <p className="text-xs text-white/65">Total Teams</p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-orange-400">32</p>
+                  <p className="text-xs text-white/65">Total Matches</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
+            <div>
+              <p className="font-semibold text-slate-800">
+                Tournament Overview
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+              </p>
+            </div>
+
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+              Completed
+            </span>
+          </div>
+        </div>
+      </section>
+
+
       {/* =========================================================
           HERO SECTION
       ========================================================= */}
@@ -78,7 +131,7 @@ export default function PointsTable() {
           backgroundImage: "url('escl-stadium-hero.png')",
         }}
       >
-         {/* Dark image overlay for readability */}
+        {/* Dark image overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#06172c]/95 via-[#081d36]/50 to-[#08172d]/60" />
 
         {/* Soft bottom fade */}
@@ -318,11 +371,10 @@ export default function PointsTable() {
 
                         <tr
                           key={row.id}
-                          className={`transition-colors ${
-                            isTopFour
-                              ? 'bg-orange-50/60 hover:bg-orange-50'
-                              : 'bg-white hover:bg-slate-50'
-                          }`}
+                          className={`transition-colors ${isTopFour
+                            ? 'bg-orange-50/60 hover:bg-orange-50'
+                            : 'bg-white hover:bg-slate-50'
+                            }`}
                         >
 
                           {/* Position */}
@@ -395,13 +447,12 @@ export default function PointsTable() {
 
                           {/* NRR */}
                           <td
-                            className={`stat-num px-4 py-4 font-medium ${
-                              Number(row.netRunRate) > 0
-                                ? 'text-green-600'
-                                : Number(row.netRunRate) < 0
+                            className={`stat-num px-4 py-4 font-medium ${Number(row.netRunRate) > 0
+                              ? 'text-green-600'
+                              : Number(row.netRunRate) < 0
                                 ? 'text-red-500'
                                 : 'text-navy-700'
-                            }`}
+                              }`}
                           >
                             {row.netRunRate}
                           </td>
