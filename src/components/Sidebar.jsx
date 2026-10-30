@@ -1,3 +1,4 @@
+
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -7,6 +8,7 @@ import {
   Trophy,
   Mail,
   Home,
+  Medal,
 } from 'lucide-react'
 
 const LINKS = [
@@ -35,6 +37,12 @@ const LINKS = [
     icon: ListTree,
   },
   {
+    to: '/admin/tournament-management',
+    label: 'Tournament Management',
+    shortLabel: 'Tournament',
+    icon: Medal,
+  },
+  {
     to: '/admin/points-table',
     label: 'Manage Points Table',
     shortLabel: 'Points',
@@ -49,6 +57,12 @@ const LINKS = [
 ]
 
 export default function Sidebar() {
+  const linkClass = ({ isActive }) =>
+    `focus-ring flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
+      ? 'bg-orange-500 text-white'
+      : 'text-white/70 hover:bg-white/10 hover:text-white'
+    }`
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -63,18 +77,12 @@ export default function Sidebar() {
           </span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+        <nav
+          aria-label="Admin navigation"
+          className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        >
           {/* Visit Website */}
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `focus-ring flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                ? 'bg-orange-500 text-white'
-                : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`
-            }
-          >
+          <NavLink to="/" end className={linkClass}>
             <Home size={18} />
             Visit Home page
           </NavLink>
@@ -85,15 +93,10 @@ export default function Sidebar() {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                `focus-ring flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                  ? 'bg-orange-500 text-white'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
+              className={linkClass}
             >
               <Icon size={18} />
-              {label}
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
@@ -104,7 +107,7 @@ export default function Sidebar() {
         aria-label="Admin mobile navigation"
         className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-navy-900 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-4 sm:grid-cols-8">
           {/* Website Home */}
           <NavLink
             to="/"
@@ -119,7 +122,10 @@ export default function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                <Home size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                <Home
+                  size={20}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                />
                 <span className="w-full truncate text-[9px] font-semibold leading-tight">
                   Website
                 </span>

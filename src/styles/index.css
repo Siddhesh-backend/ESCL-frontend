@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -20,24 +20,716 @@
   --color-loss: #c93636;
 
   --font-display: "Barlow Condensed", ui-sans-serif, sans-serif;
-  --font-body: "Inter", ui-sans-serif, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, monospace;
+  --font-body: "Manrope", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-html { scroll-behavior: smooth; }
-body { font-family: var(--font-body); color: var(--color-navy-900); background-color: #ffffff; }
-h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: 0.01em; }
-.stat-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Base */
+:root {
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  background: #071426;
+}
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+html {
+  scroll-behavior: smooth;
+  background: #071426;
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: #f5f1e8;
+  background-color: #071426;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+.stat-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Selection */
+::selection {
+  color: #fff;
+  background: rgb(249 115 22 / 75%);
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #29476d #071426;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #071426;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #29476d;
+  border: 2px solid #071426;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f2793f;
+}
+
+/* Keyboard accessibility */
+:focus-visible {
+  outline: 2px solid #f2793f;
+  outline-offset: 3px;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #f2793f;
+  outline-offset: 3px;
+}
+
+/* --------------------------------
+   ESCL ANIMATIONS
+--------------------------------- */
+
+@keyframes escl-float {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -12px, 0);
   }
 }
 
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { background: var(--color-navy-700); border-radius: 999px; }
-.focus-ring:focus-visible { outline: 2px solid var(--color-orange-500); outline-offset: 2px; }
+@keyframes escl-glow {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.07);
+  }
+}
+
+@keyframes escl-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes escl-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes escl-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes escl-stadium-drift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: scale(1.12) translate3d(-0.6%, 0.4%, 0);
+  }
+}
+
+@keyframes escl-pulse-line {
+
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes escl-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation utility classes */
+.escl-float {
+  animation: escl-float 6s ease-in-out infinite;
+}
+
+.escl-glow {
+  animation: escl-glow 5s ease-in-out infinite;
+}
+
+.escl-rise {
+  animation: escl-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.escl-shimmer {
+  background-size: 200% auto;
+  animation: escl-shimmer 5s linear infinite;
+}
+
+.escl-orbit {
+  animation: escl-orbit 24s linear infinite;
+}
+
+/* --------------------------------
+   HERO BACKGROUND
+--------------------------------- */
+
+.escl-hero-background {
+  background-repeat: no-repeat;
+  background-position: center 42%;
+  background-size: cover;
+  transform-origin: center;
+  animation: escl-stadium-drift 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* --------------------------------
+   STADIUM SECTION BACKGROUNDS
+--------------------------------- */
+
+.escl-stadium-section {
+  isolation: isolate;
+  background-color: #071426;
+}
+
+.escl-stadium-section>div[aria-hidden="true"] {
+  background-repeat: no-repeat;
+}
+
+/* Image layer remains subtle behind the text/cards */
+.escl-stadium-section>div[style*="background-image"] {
+  background-position: center;
+  background-size: cover;
+  transform: scale(1.025);
+}
+
+/* --------------------------------
+   PREMIUM GLASS CARDS
+--------------------------------- */
+
+.escl-card {
+  transition:
+    transform 350ms ease,
+    border-color 350ms ease,
+    box-shadow 350ms ease,
+    background-color 350ms ease;
+}
+
+.escl-card:hover {
+  transform: translateY(-5px);
+  border-color: rgb(249 115 22 / 42%);
+  box-shadow:
+    0 20px 48px rgb(0 0 0 / 25%),
+    0 0 28px rgb(249 115 22 / 5%);
+}
+
+/* --------------------------------
+   SCROLL REVEAL
+--------------------------------- */
+
+.escl-reveal-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.escl-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 700ms ease,
+    transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* --------------------------------
+   TABLE & MOBILE TOUCH
+--------------------------------- */
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  white-space: nowrap;
+}
+
+@media (hover: none) {
+  .escl-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* --------------------------------
+   RESPONSIVE POLISH
+--------------------------------- */
+
+@media (max-width: 639px) {
+  .escl-hero-background {
+    background-position: 56% center;
+    animation-duration: 30s;
+  }
+
+  .escl-stadium-section>div[style*="background-image"] {
+    background-position: center;
+    background-size: cover;
+  }
+
+  .escl-card:hover {
+    transform: none;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .escl-hero-background {
+    background-position: center;
+  }
+}
+
+/* --------------------------------
+   ACCESSIBILITY: REDUCED MOTION
+--------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .escl-float,
+  .escl-glow,
+  .escl-rise,
+  .escl-shimmer,
+  .escl-orbit,
+  .escl-hero-background {
+    animation: none !important;
+  }
+
+  .escl-reveal-hidden,
+  .escl-reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .escl-card,
+  .escl-card:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Slow cinematic stadium background movement */
+.escl-section-background {
+  transform: scale(1.04);
+  animation: escl-stadium-drift 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes escl-stadium-drift {
+  0% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: scale(1.1) translate3d(-0.5%, -0.5%, 0);
+  }
+
+  100% {
+    transform: scale(1.06) translate3d(0.5%, 0.5%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escl-section-background {
+    animation: none;
+    transform: none;
+  }
+}
+
+.escl-hero-background {
+  transform: scale(1.03);
+  filter: brightness(1.2) saturate(1.08);
+  animation: escl-hero-motion 22s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+
+@keyframes escl-hero-motion {
+  0% {
+    transform: scale(1.03) translate3d(0, 0, 0);
+    filter: brightness(1.15) saturate(1.05);
+  }
+
+  50% {
+    transform: scale(1.09) translate3d(-0.5%, -0.5%, 0);
+    filter: brightness(1.28) saturate(1.12);
+  }
+
+  100% {
+    transform: scale(1.06) translate3d(0.5%, 0.5%, 0);
+    filter: brightness(1.2) saturate(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escl-hero-background {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .escl-hero-background {
+    background-position: 58% center;
+  }
+}
+
+/* ================================
+   ESCL Schedule - Responsive Fix
+================================ */
+
+/* Prevent horizontal overflow */
+.schedule-page,
+.schedule-page * {
+  box-sizing: border-box;
+}
+
+.schedule-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+/* Search and filter area */
+.schedule-page .schedule-search-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.schedule-page .schedule-search-panel input,
+.schedule-page .schedule-search-panel select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Match cards grid */
+.schedule-page .schedule-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+.schedule-page .schedule-match-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.schedule-page .schedule-match-card h2,
+.schedule-page .schedule-match-card h3,
+.schedule-page .schedule-match-card p {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Dark theme status dropdown */
+.schedule-page select {
+  color-scheme: dark;
+  background-color: #0b1b30;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.schedule-page select option {
+  background-color: #0b1b30;
+  color: #f8fafc;
+}
+
+.schedule-page select:focus {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-color: #f97316;
+}
+
+/* Tablet and mobile */
+@media (max-width: 768px) {
+  .schedule-page .schedule-matches-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .schedule-page .schedule-search-panel {
+    padding: 16px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .schedule-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .schedule-page .schedule-match-card {
+    border-radius: 14px;
+  }
+
+  .schedule-page .schedule-match-card h2,
+  .schedule-page .schedule-match-card h3 {
+    font-size: clamp(18px, 5vw, 22px);
+    line-height: 1.3;
+  }
+
+  .schedule-page .schedule-search-panel input,
+  .schedule-page .schedule-search-panel select {
+    font-size: 14px;
+  }
+}
+
+/* ESCL Schedule - Dark Status Dropdown */
+.schedule-page select {
+  background-color: #0b1b30 !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569;
+  color-scheme: dark;
+}
+
+.schedule-page select option {
+  background-color: #0b1b30 !important;
+  color: #f8fafc !important;
+}
+
+.schedule-page select option:checked {
+  background-color: #f97316 !important;
+  color: #ffffff !important;
+}
+
+.schedule-page select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgb(249 115 22 / 25%);
+}
+
+/* ========================================
+   ESCL Animated RGB Headings
+   Slow, natural animation matching navy/orange theme
+======================================== */
+
+@keyframes escl-rgb-heading {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Slow, warm colour flow that complements ESCL's navy-and-orange theme */
+.escl-animated-heading {
+  display: inline-block;
+  background-image: linear-gradient(90deg,
+      #f97316,
+      #fb923c,
+      #fbbf24,
+      #f5f1e8,
+      #fdba74,
+      #e85d25,
+      #f97316);
+  background-size: 250% 250%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: escl-rgb-heading 16s ease-in-out infinite;
+}
+
+/* Respect reduced-motion accessibility setting */
+@media (prefers-reduced-motion: reduce) {
+  .escl-animated-heading {
+    animation: none;
+    background-position: 50% 50%;
+  }
+}
+
+/* ========================================
+   ESCL GLOBAL TYPOGRAPHY & READABILITY
+   Modern fonts, warm off-white text, navy/orange palette
+======================================== */
+
+:root {
+  --escl-text-primary: #f5f1e8;
+  --escl-text-secondary: #c5cfdd;
+  --escl-text-muted: #9eafc4;
+  --escl-surface: #0b1b30;
+  --escl-surface-raised: #10243b;
+  --escl-border: #243b53;
+  --escl-orange: #f97316;
+}
+
+body {
+  color: var(--escl-text-primary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--escl-text-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+p,
+li,
+label,
+legend,
+figcaption,
+small {
+  text-rendering: optimizeLegibility;
+}
+
+/* Legacy navy text utilities were designed for light backgrounds.
+   Brighten them for ESCL's dark navy interface. */
+.text-navy-900,
+.text-navy-800 {
+  color: #f5f1e8 !important;
+}
+
+.text-navy-700,
+.text-navy-600 {
+  color: #c5cfdd !important;
+}
+
+.text-navy-500,
+.text-slate-500 {
+  color: #9eafc4;
+}
+
+input,
+textarea,
+select {
+  color: #f5f1e8;
+  caret-color: #f97316;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #91a2b8;
+  opacity: 1;
+}
+
+:focus-visible {
+  outline-color: #f97316;
+}
+
+/* Preserve RGB gradient heading text */
+.escl-animated-heading {
+  color: transparent;
+}
+
+.stat-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}

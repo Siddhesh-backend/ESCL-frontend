@@ -23,6 +23,10 @@ import ManageSchedule from '../pages/admin/ManageSchedule'
 import ManageUpcomingSeries from '../pages/admin/ManageUpcomingSeries'
 import ManagePointsTable from '../pages/admin/ManagePointsTable'
 import ManageContactMessages from '../pages/admin/ManageContactMessages'
+import TeamRegistration from '../pages/TeamRegistration'
+import SponsorRegistration from '../pages/SponsorRegistration'
+import TournamentManagement from '../pages/admin/TournamentManagement'
+import Tournament from '../pages/Tournament'
 
 export default function AppRouter() {
   return (
@@ -31,8 +35,18 @@ export default function AppRouter() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route
+          path="/team-registration"
+          element={<TeamRegistration />}
+        />
+
+        <Route
+          path="/sponsor-registration"
+          element={<SponsorRegistration />}
+        />
         <Route path="/contact" element={<Contact />} />
         <Route path="/schedule" element={<Schedule />} />
+        <Route path="/tournament" element={<Tournament />} />
         <Route path="/upcoming-series" element={<UpcomingSeries />} />
         <Route path="/points-table" element={<PointsTable />} />
         <Route path="/players" element={<PlayerList />} />
@@ -63,6 +77,10 @@ export default function AppRouter() {
         <Route path="upcoming-series" element={<ManageUpcomingSeries />} />
         <Route path="points-table" element={<ManagePointsTable />} />
         <Route path="messages" element={<ManageContactMessages />} />
+        <Route
+          path="tournament-management"
+          element={<TournamentManagement />}
+        />
       </Route>
     </Routes>
   )

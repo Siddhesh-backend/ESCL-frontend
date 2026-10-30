@@ -1,12 +1,22 @@
 
 import { useMemo, useState } from 'react'
-import { Trophy, ArrowUpDown, Medal, Search } from 'lucide-react'
+import {
+  Trophy,
+  ArrowUpDown,
+  Medal,
+  ChevronDown,
+  Sparkles,
+} from 'lucide-react'
+
 import pointsTableService from '../services/pointsTableService'
 import useFetch from '../hooks/useFetch'
 import useDebounce from '../hooks/useDebounce'
 import Loader from '../components/Loader'
 import EmptyState from '../components/EmptyState'
 import SearchBox from '../components/SearchBox'
+
+const HERO_IMAGE = "url('/escl-stadium-hero.png')"
+const SECTION_IMAGE = "url('/escl-stadium-hero%20(1)%20copy.png')"
 
 const COLUMNS = [
   { key: 'position', label: 'Pos' },
@@ -20,6 +30,105 @@ const COLUMNS = [
   { key: 'points', label: 'Pts' },
 ]
 
+// Read tournament information from common API response shapes.
+function getTournamentName(row) {
+  return (
+    row.tournamentName ||
+    row.tournament?.name ||
+    row.seriesName ||
+    row.series?.seriesName ||
+    ''
+  )
+}
+
+function getTournamentId(row) {
+  return (
+    row.tournamentId ??
+    row.tournament?.id ??
+    row.seriesId ??
+    row.series?.id ??
+    getTournamentName(row)
+  )
+}
+
+function SectionHeading({ eyebrow, title, description }) {
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="h-px w-8 bg-orange-500" />
+        <span className="font-display text-xs font-bold uppercase tracking-[0.22em] text-orange-400">
+          {eyebrow}
+        </span>
+      </div>
+
+      <h2 className="font-display text-3xl font-extrabold tracking-wide text-[#F3F0E8] sm:text-4xl">
+        {title}
+      </h2>
+
+      {description && (
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
+          {description}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function StatCard({ value, label, icon: Icon }) {
+  return (
+    <div className="escl-card flex min-w-[135px] items-center gap-4 rounded-2xl border border-white/10 bg-[#101D2D]/80 px-5 py-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-orange-500/40">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-400/20 bg-orange-500/10 text-orange-400">
+        <Icon size={19} />
+      </div>
+
+      <div>
+        <p className="font-display text-2xl font-extrabold text-[#F5F1E8]">
+          {value}
+        </p>
+        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function StadiumSection({ children }) {
+  return (
+    <section className="escl-stadium-section relative isolate overflow-hidden bg-[#07111F]">
+      <div
+        aria-hidden="true"
+        className="escl-section-background absolute inset-0 -z-20 bg-cover bg-center"
+        style={{ backgroundImage: SECTION_IMAGE }}
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-[#06101F]/85"
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-gradient-to-b from-[#071426]/70 via-[#081525]/80 to-[#050B14]/95"
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute -left-32 top-24 -z-10 h-80 w-80 rounded-full bg-orange-500/10 blur-[100px]"
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute -right-32 bottom-0 -z-10 h-96 w-96 rounded-full bg-blue-500/10 blur-[110px]"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        {children}
+      </div>
+    </section>
+  )
+}
+
 export default function PointsTable() {
   const { data, loading, error } = useFetch(
     () => pointsTableService.getAll(),
@@ -27,16 +136,49 @@ export default function PointsTable() {
   )
 
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search)
-
+  const [selectedTournament, setSelectedTournament] = useState('all')
   const [sortKey, setSortKey] = useState('position')
   const [sortDir, setSortDir] = useState('asc')
 
+  const debouncedSearch = useDebounce(search)
+
+  const tournaments = useMemo(() => {
+    const unique = new Map()
+
+      ; (data || []).forEach((row) => {
+        const name = getTournamentName(row)
+        const id = getTournamentId(row)
+
+        if (name && id !== undefined && id !== null) {
+          unique.set(String(id), {
+            id: String(id),
+            name,
+          })
+        }
+      })
+
+    return Array.from(unique.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+  }, [data])
+
+  const tournamentRows = useMemo(() => {
+    const list = data || []
+
+    if (selectedTournament === 'all') {
+      return list
+    }
+
+    return list.filter(
+      (row) => String(getTournamentId(row)) === selectedTournament
+    )
+  }, [data, selectedTournament])
+
   const rows = useMemo(() => {
-    let list = (data || []).filter((r) =>
+    let list = tournamentRows.filter((row) =>
       !debouncedSearch
         ? true
-        : r.teamName
+        : row.teamName
           ?.toLowerCase()
           .includes(debouncedSearch.toLowerCase())
     )
@@ -45,21 +187,39 @@ export default function PointsTable() {
       const va = a[sortKey]
       const vb = b[sortKey]
 
-      if (typeof va === 'number' && typeof vb === 'number') {
-        return sortDir === 'asc' ? va - vb : vb - va
+      if (
+        va !== null &&
+        vb !== null &&
+        va !== '' &&
+        vb !== '' &&
+        Number.isFinite(Number(va)) &&
+        Number.isFinite(Number(vb))
+      ) {
+        return sortDir === 'asc'
+          ? Number(va) - Number(vb)
+          : Number(vb) - Number(va)
       }
 
+      const first = String(va ?? '')
+      const second = String(vb ?? '')
+
       return sortDir === 'asc'
-        ? String(va).localeCompare(String(vb))
-        : String(vb).localeCompare(String(va))
+        ? first.localeCompare(second)
+        : second.localeCompare(first)
     })
 
     return list
-  }, [data, debouncedSearch, sortKey, sortDir])
+  }, [tournamentRows, debouncedSearch, sortKey, sortDir])
+
+  const activeTournament = tournaments.find(
+    (tournament) => tournament.id === selectedTournament
+  )
 
   function toggleSort(key) {
     if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+      setSortDir((direction) =>
+        direction === 'asc' ? 'desc' : 'asc'
+      )
     } else {
       setSortKey(key)
       setSortDir('asc')
@@ -67,431 +227,357 @@ export default function PointsTable() {
   }
 
   return (
-    <div className="bg-slate-50">
+    <main className="min-h-screen bg-[#07111F] text-[#F3F0E8]">
+      {/* HERO */}
+      <section className="escl-hero-background relative isolate overflow-hidden bg-[#06101F]">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-30 bg-cover bg-center"
+          style={{ backgroundImage: HERO_IMAGE }}
+        />
 
-      {/* ICCL 2026 Demo Tournament */}
-      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-r from-[#071b33] via-[#102e50] to-[#071b33] p-5 text-white sm:p-7">
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-              <div>
-                <span className="inline-flex rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-300">
-                </span>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-r from-[#050D19]/95 via-[#071426]/80 to-[#071426]/55"
+        />
 
-                <h2 className="mt-3 text-2xl font-extrabold sm:text-3xl">
-                  ICCL <span className="text-orange-400">2026</span>
-                </h2>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-t from-[#07111F] via-transparent to-[#07111F]/30"
+        />
 
-                <p className="mt-2 text-sm text-white/80 sm:text-base">
-                  Inter College Championship League
-                </p>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
 
-                <p className="mt-2 text-sm text-white/60">
-                  Pune · 13–15 October 2026 · 83 Cricket Ground
-                </p>
-              </div>
+        <div
+          aria-hidden="true"
+          className="escl-glow absolute -right-24 top-10 -z-10 h-80 w-80 rounded-full bg-orange-500/15 blur-[100px]"
+        />
 
-              <div className="grid grid-cols-2 gap-3 sm:min-w-64">
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
-                  <p className="text-2xl font-bold text-orange-400">24</p>
-                  <p className="text-xs text-white/65">Total Teams</p>
-                </div>
+        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+          <div className="max-w-4xl">
+            <div className="escl-rise inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-[#111D2B]/80 px-4 py-2 backdrop-blur-md">
+              <Sparkles size={15} className="text-orange-400" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-200 sm:text-xs">
+                Tournament Standings
+              </span>
+            </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
-                  <p className="text-2xl font-bold text-orange-400">32</p>
-                  <p className="text-xs text-white/65">Total Matches</p>
-                </div>
-              </div>
+
+            <h1 className="escl-rise mt-7 font-display text-[2.8rem] font-black leading-[0.98] tracking-tight min-[380px]:text-5xl sm:text-6xl lg:text-7xl">
+              <span className="escl-animated-heading">POINTS</span>
+
+              <span className="mt-2 block pb-2">
+                <span className="escl-animated-heading">TABLE</span>
+                <span className="text-[#F5F1E8]"></span>
+              </span>
+            </h1>
+
+
+            <p className="escl-rise mt-6 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base sm:leading-8 lg:text-lg">
+              Explore tournament standings, compare team performances,
+              and follow every team's journey on the road to the title.
+            </p>
+
+            <div className="escl-rise mt-8 flex flex-wrap gap-3 sm:gap-4">
+              <StatCard
+                value={loading ? '...' : rows.length}
+                label="Teams Listed"
+                icon={Trophy}
+              />
+
+              <StatCard
+                value={loading ? '...' : tournaments.length}
+                label="Tournaments"
+                icon={Medal}
+              />
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
+      {/* TOURNAMENT SELECTOR + POINTS TABLE */}
+      <StadiumSection>
+        <div className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <SectionHeading
+            eyebrow="Tournament Rankings"
+            title="League Points Table"
+            description="Select a tournament to view its standings and compare participating teams."
+          />
+
+          <div className="grid w-full gap-4 sm:grid-cols-2 lg:w-auto lg:min-w-[500px]">
+            {/* TOURNAMENT DROPDOWN */}
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="tournamentSelect"
+                className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400"
+              >
+                Select Tournament
+              </label>
+
+              <div className="relative">
+                <Trophy
+                  size={17}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-orange-400"
+                />
+
+                <select
+                  id="tournamentSelect"
+                  value={selectedTournament}
+                  onChange={(event) => {
+                    setSelectedTournament(event.target.value)
+                    setSortKey('position')
+                    setSortDir('asc')
+                  }}
+                  className="w-full appearance-none rounded-xl border border-white/10 bg-[#101F31] py-3 pl-11 pr-10 text-sm font-semibold text-[#F3F0E8] outline-none transition hover:border-orange-400/40 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/15"
+                >
+                  <option value="all" className="bg-[#101F31] text-[#F3F0E8]">
+                    All Tournaments
+                  </option>
+
+                  {tournaments.map((tournament) => (
+                    <option
+                      key={tournament.id}
+                      value={tournament.id}
+                      className="bg-[#101F31] text-[#F3F0E8]"
+                    >
+                      {tournament.name}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown
+                  size={16}
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+              </div>
+            </div>
+
+            {/* TEAM SEARCH */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                Search Team
+              </label>
+
+              <SearchBox
+                value={search}
+                onChange={setSearch}
+                placeholder="Search team..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SELECTED TOURNAMENT */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0C1929]/80 px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-400/20 bg-orange-500/10 text-orange-400">
+              <Medal size={20} />
+            </div>
+
             <div>
-              <p className="font-semibold text-slate-800">
-                Tournament Overview
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                Currently Viewing
               </p>
-              <p className="mt-1 text-sm text-slate-500">
-              </p>
+
+              <h3 className="mt-1 font-display text-lg font-bold text-[#F3F0E8]">
+                {activeTournament?.name ||
+                  (selectedTournament === 'all'
+                    ? 'All Tournaments'
+                    : 'Selected Tournament')}
+              </h3>
             </div>
-
-            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-              Completed
-            </span>
           </div>
-        </div>
-      </section>
 
-
-      {/* =========================================================
-          HERO SECTION
-      ========================================================= */}
-      <section
-        className="relative overflow-hidden bg-navy-900 bg-cover bg-center bg-no-repeat text-white"
-        style={{
-          backgroundImage: "url('escl-stadium-hero.png')",
-        }}
-      >
-        {/* Dark image overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#06172c]/95 via-[#081d36]/50 to-[#08172d]/60" />
-
-        {/* Soft bottom fade */}
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#06172c]/50 to-transparent" />
-
-        {/* Background Grid */}
-        <div className="absolute inset-0 opacity-[0.06]">
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-              backgroundSize: '48px 48px',
-            }}
-          />
+          <span className="rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300">
+            {rows.length} {rows.length === 1 ? 'Team' : 'Teams'}
+          </span>
         </div>
 
-        {/* Orange Glow */}
-        <div className="absolute -right-32 top-10 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
-
-        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-300">
-            <Trophy size={15} />
-            Tournament Standings
-          </div>
-
-          {/* Heading */}
-          <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.05] sm:text-6xl lg:text-7xl">
-            Points{' '}
-            <span className="text-orange-500">
-              Table
-            </span>
-          </h1>
-
-          {/* Description */}
-          <p className="mt-5 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-            Track every team's journey through the ESCL season — wins,
-            losses, points and net run rate, all in one place.
-          </p>
-
-          {/* Stats */}
-          <div className="mt-8 flex flex-wrap gap-4">
-
-            {/* Teams */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 backdrop-blur-sm">
-
-              <div className="stat-num text-3xl font-bold text-orange-400">
-                {data?.length || 0}
-              </div>
-
-              <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/50">
-                Teams
-              </div>
-
-            </div>
-
-            {/* Season */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 backdrop-blur-sm">
-
-              <div className="stat-num text-3xl font-bold text-white">
-                ESCL
-              </div>
-
-              <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/50">
-                Current Season
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* =========================================================
-          CONTENT
-      ========================================================= */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-
-        {/* Section Header */}
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-
-          <div>
-
-            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-orange-500">
-              Standings
-            </span>
-
-            <h2 className="mt-2 font-display text-3xl font-bold text-navy-900 sm:text-4xl">
-              League Rankings
-            </h2>
-
-          </div>
-
-          {/* Search */}
-          <div className="w-full sm:w-auto">
-
-            <SearchBox
-              value={search}
-              onChange={setSearch}
-              placeholder="Search team..."
-            />
-
-          </div>
-
-        </div>
-
-
-        {/* =========================================================
-            LOADING
-        ========================================================= */}
+        {/* LOADING */}
         {loading && (
-          <Loader label="Loading points table..." />
+          <div className="rounded-2xl border border-white/10 bg-[#0C1929]/80 px-4 py-10">
+            <Loader label="Loading points table..." />
+          </div>
         )}
 
-
-        {/* =========================================================
-            ERROR
-        ========================================================= */}
+        {/* ERROR */}
         {!loading && error && (
-          <EmptyState
-            title="Couldn't load points table"
-            description={error}
-          />
+          <div className="rounded-2xl border border-red-400/20 bg-[#111B29]/90 p-5">
+            <EmptyState
+              title="Couldn't load points table"
+              description={error}
+            />
+          </div>
         )}
 
-
-        {/* =========================================================
-            EMPTY
-        ========================================================= */}
-        {!loading &&
-          !error &&
-          rows.length === 0 && (
+        {/* EMPTY */}
+        {!loading && !error && rows.length === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-[#0C1929]/80 px-4 py-10">
             <EmptyState
               icon={Trophy}
-              title="No standings yet"
-              description="Points table updates after matches begin."
+              title="No standings found"
+              description={
+                search
+                  ? 'No teams match your search. Try another team name.'
+                  : selectedTournament !== 'all'
+                    ? 'No points table records are available for this tournament.'
+                    : 'Tournament standings will appear here when data is available.'
+              }
             />
-          )}
+          </div>
+        )}
 
-
-        {/* =========================================================
-            TABLE
-        ========================================================= */}
-        {!loading &&
-          !error &&
-          rows.length > 0 && (
-
-            <div className="overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
-
-              {/* Table Top Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-100 bg-white px-5 py-4">
-
-                <div className="flex items-center gap-3">
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-500">
-                    <Medal size={20} />
-                  </div>
-
-                  <div>
-
-                    <h3 className="font-display font-semibold text-navy-900">
-                      Current Standings
-                    </h3>
-
-                    <p className="text-xs text-navy-700/50">
-                      Click any column to sort
-                    </p>
-
-                  </div>
-
+        {/* TABLE */}
+        {!loading && !error && rows.length > 0 && (
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0C1929]/95 shadow-xl shadow-black/20 backdrop-blur-xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-400/20 bg-orange-500/10 text-orange-400">
+                  <Trophy size={19} />
                 </div>
 
-                <span className="rounded-full bg-navy-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white">
-                  {rows.length} Teams
-                </span>
+                <div>
+                  <h3 className="font-display font-bold text-[#F3F0E8]">
+                    Points Standings
+                  </h3>
 
+                  <p className="mt-1 text-xs text-slate-400">
+                    Select a column heading to sort
+                  </p>
+                </div>
               </div>
 
-
-              {/* Responsive Table */}
-              <div className="overflow-x-auto">
-
-                <table className="min-w-[800px] w-full text-sm">
-
-                  {/* Header */}
-                  <thead className="bg-navy-900 text-white">
-
-                    <tr>
-
-                      {COLUMNS.map((col) => (
-
-                        <th
-                          key={col.key}
-                          className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide"
-                        >
-
-                          <button
-                            onClick={() => toggleSort(col.key)}
-                            className="focus-ring flex items-center gap-1.5 rounded transition-colors hover:text-orange-300"
-                          >
-
-                            {col.label}
-
-                            <ArrowUpDown
-                              size={12}
-                              className={
-                                sortKey === col.key
-                                  ? 'text-orange-400'
-                                  : 'opacity-40'
-                              }
-                            />
-
-                          </button>
-
-                        </th>
-
-                      ))}
-
-                    </tr>
-
-                  </thead>
-
-
-                  {/* Body */}
-                  <tbody className="divide-y divide-navy-100">
-
-                    {rows.map((row, idx) => {
-
-                      const isTopFour = idx < 4
-                      const isFirst = idx === 0
-
-                      return (
-
-                        <tr
-                          key={row.id}
-                          className={`transition-colors ${isTopFour
-                            ? 'bg-orange-50/60 hover:bg-orange-50'
-                            : 'bg-white hover:bg-slate-50'
-                            }`}
-                        >
-
-                          {/* Position */}
-                          <td className="px-4 py-4">
-
-                            <div className="flex items-center gap-2">
-
-                              {isFirst ? (
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white shadow-sm">
-                                  1
-                                </div>
-                              ) : (
-                                <span className="stat-num pl-2 font-semibold text-navy-700">
-                                  {row.position}
-                                </span>
-                              )}
-
-                            </div>
-
-                          </td>
-
-
-                          {/* Team */}
-                          <td className="px-4 py-4">
-
-                            <div className="flex items-center gap-3">
-
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-900 text-xs font-bold text-white">
-                                {row.teamName?.charAt(0)?.toUpperCase()}
-                              </div>
-
-                              <span className="font-semibold text-navy-900">
-                                {row.teamName}
-                              </span>
-
-                            </div>
-
-                          </td>
-
-
-                          {/* Played */}
-                          <td className="stat-num px-4 py-4">
-                            {row.matchesPlayed}
-                          </td>
-
-
-                          {/* Won */}
-                          <td className="stat-num px-4 py-4 font-semibold text-green-600">
-                            {row.won}
-                          </td>
-
-
-                          {/* Lost */}
-                          <td className="stat-num px-4 py-4">
-                            {row.lost}
-                          </td>
-
-
-                          {/* Tie */}
-                          <td className="stat-num px-4 py-4">
-                            {row.tie}
-                          </td>
-
-
-                          {/* No Result */}
-                          <td className="stat-num px-4 py-4">
-                            {row.noResult}
-                          </td>
-
-
-                          {/* NRR */}
-                          <td
-                            className={`stat-num px-4 py-4 font-medium ${Number(row.netRunRate) > 0
-                              ? 'text-green-600'
-                              : Number(row.netRunRate) < 0
-                                ? 'text-red-500'
-                                : 'text-navy-700'
-                              }`}
-                          >
-                            {row.netRunRate}
-                          </td>
-
-
-                          {/* Points */}
-                          <td className="px-4 py-4">
-
-                            <span className="inline-flex min-w-10 items-center justify-center rounded-lg bg-orange-100 px-3 py-1.5 font-bold text-orange-600">
-                              {row.points}
-                            </span>
-
-                          </td>
-
-                        </tr>
-
-                      )
-
-                    })}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
+              <span className="rounded-full border border-white/10 bg-[#101F31] px-3 py-1.5 text-xs font-semibold text-slate-300">
+                {rows.length} {rows.length === 1 ? 'Team' : 'Teams'}
+              </span>
             </div>
 
-          )}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] text-sm">
+                <thead className="bg-[#101F31] text-slate-300">
+                  <tr>
+                    {COLUMNS.map((column) => (
+                      <th
+                        key={column.key}
+                        scope="col"
+                        className="whitespace-nowrap border-b border-white/10 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(column.key)}
+                          aria-label={`Sort by ${column.label}`}
+                          className="flex items-center gap-1.5 rounded transition-colors hover:text-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                        >
+                          {column.label}
 
+                          <ArrowUpDown
+                            size={12}
+                            className={
+                              sortKey === column.key
+                                ? 'text-orange-400'
+                                : 'text-slate-500'
+                            }
+                          />
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
 
-        {/* Backend Note */}
-        <p className="mt-4 text-xs text-navy-700/50">
-          Season shown reflects the current default season from the backend.
+                <tbody className="divide-y divide-white/[0.07]">
+                  {rows.map((row, index) => {
+                    const isTopFour = index < 4
+                    const isFirst = index === 0
+
+                    return (
+                      <tr
+                        key={row.id ?? `${row.teamName}-${index}`}
+                        className={`transition-colors ${isTopFour
+                          ? 'bg-orange-500/[0.045] hover:bg-orange-500/[0.09]'
+                          : 'hover:bg-white/[0.035]'
+                          }`}
+                      >
+                        <td className="whitespace-nowrap px-4 py-4">
+                          {isFirst ? (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 font-mono text-sm font-bold text-[#07111F]">
+                              {row.position ?? index + 1}
+                            </div>
+                          ) : (
+                            <span className="pl-2 font-mono font-semibold text-slate-300">
+                              {row.position ?? index + 1}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[#17263A] font-display text-sm font-extrabold text-orange-300">
+                              {row.teamName?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+
+                            <span className="font-semibold text-[#F3F0E8]">
+                              {row.teamName}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4 font-mono text-slate-300">
+                          {row.matchesPlayed}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4 font-mono font-semibold text-emerald-400">
+                          {row.won}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4 font-mono text-slate-300">
+                          {row.lost}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4 font-mono text-slate-300">
+                          {row.tie}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4 font-mono text-slate-300">
+                          {row.noResult}
+                        </td>
+
+                        <td
+                          className={`whitespace-nowrap px-4 py-4 font-mono font-semibold ${Number(row.netRunRate) > 0
+                            ? 'text-emerald-400'
+                            : Number(row.netRunRate) < 0
+                              ? 'text-rose-400'
+                              : 'text-slate-300'
+                            }`}
+                        >
+                          {row.netRunRate}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-4">
+                          <span className="inline-flex min-w-10 items-center justify-center rounded-lg border border-orange-400/20 bg-orange-500/10 px-3 py-1.5 font-mono font-bold text-orange-300">
+                            {row.points}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <p className="mt-4 text-xs leading-5 text-slate-500">
+          Standings are displayed using the tournament and team data returned by the backend.
         </p>
-
-      </section>
-
-    </div>
+      </StadiumSection>
+    </main>
   )
 }
-

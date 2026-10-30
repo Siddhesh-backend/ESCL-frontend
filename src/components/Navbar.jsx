@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import {
@@ -7,7 +8,6 @@ import {
   ShieldCheck,
   Home,
   CalendarDays,
-  Users,
   TableProperties,
   Mail,
 } from 'lucide-react'
@@ -15,10 +15,11 @@ import { NAV_LINKS } from '../utils/constants'
 import { useAuth } from '../context/AuthContext'
 import Button from './Button'
 
+// Compact mobile bottom navigation: 6 equally sized items
 const MOBILE_NAV_LINKS = [
   { label: 'Home', to: '/', icon: Home },
-  { label: 'Players', to: '/players', icon: Users },
   { label: 'Schedule', to: '/schedule', icon: CalendarDays },
+  { label: 'Tournament', to: '/tournament', icon: Trophy },
   { label: 'Points', to: '/points-table', icon: TableProperties },
   { label: 'Contact', to: '/contact', icon: Mail },
 ]
@@ -42,12 +43,13 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Main Navbar */}
       <header
         className="
           sticky top-0 z-50
           border-b border-white/10
-          bg-[#0b1d35]/90
-          shadow-[0_8px_30px_rgba(0,0,0,0.18)]
+          bg-[#0b1d35]/95
+          shadow-[0_8px_30px_rgba(0,0,0,0.25)]
           backdrop-blur-xl
         "
       >
@@ -62,16 +64,16 @@ export default function Navbar() {
           <Link
             to="/"
             onClick={closeMenu}
-            className="group flex items-center gap-3"
+            className="group flex shrink-0 items-center gap-3"
           >
             <span
               className="
                 flex h-10 w-10 items-center justify-center
                 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600
-                text-white shadow-[0_6px_20px_rgba(249,115,22,0.28)]
+                text-white shadow-[0_6px_20px_rgba(249,115,22,0.3)]
                 transition-all duration-300
                 group-hover:scale-105
-                group-hover:shadow-[0_8px_25px_rgba(249,115,22,0.4)]
+                group-hover:shadow-[0_8px_25px_rgba(249,115,22,0.45)]
               "
             >
               <Trophy size={20} strokeWidth={2.3} />
@@ -81,14 +83,14 @@ export default function Navbar() {
               <span className="font-display text-xl font-extrabold tracking-wide text-white">
                 ESCL
               </span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-white/45">
+              <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-white/50">
                 Engineering Sports
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-7 md:flex lg:gap-8">
+          <nav className="hidden items-center gap-5 lg:gap-7 md:flex">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -101,7 +103,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop Actions */}
+          {/* Desktop Authentication Actions */}
           <div className="hidden items-center gap-2.5 md:flex">
             {isAuthenticated ? (
               <>
@@ -163,11 +165,11 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Dropdown Toggle */}
           <button
             type="button"
             className="
-              flex h-10 w-10 items-center justify-center rounded-xl
+              flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
               border border-white/10 bg-white/[0.05] text-white
               transition-all duration-200
               hover:border-orange-400/40 hover:bg-orange-500/10
@@ -182,14 +184,14 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Dropdown Menu */}
+        {/* Mobile Dropdown */}
         {open && (
           <div
             id="mobile-navigation-menu"
             className="
-              border-t border-white/10 bg-[#0b1d35]/98
-              px-4 pb-5 shadow-[0_15px_35px_rgba(0,0,0,0.25)]
-              backdrop-blur-xl md:hidden
+              border-t border-white/10 bg-[#0b1d35]
+              px-4 pb-5 shadow-[0_15px_35px_rgba(0,0,0,0.3)]
+              md:hidden
             "
           >
             <nav className="mx-auto flex max-w-7xl flex-col gap-1.5 pt-3">
@@ -283,12 +285,12 @@ export default function Navbar() {
           fixed inset-x-0 bottom-0 z-40
           border-t border-white/10
           bg-[#0b1d35]/95
-          shadow-[0_-4px_20px_rgba(0,0,0,0.18)]
+          shadow-[0_-4px_25px_rgba(0,0,0,0.3)]
           backdrop-blur-xl
           md:hidden
         "
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid w-full max-w-lg grid-cols-5">
           {MOBILE_NAV_LINKS.map(({ label, to, icon: Icon }) => (
             <NavLink
               key={to}
@@ -296,7 +298,7 @@ export default function Navbar() {
               end={to === '/'}
               onClick={closeMenu}
               className={({ isActive }) =>
-                `flex min-h-16 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold transition-colors ${isActive
+                `relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 transition-colors ${isActive
                   ? 'text-orange-400'
                   : 'text-white/65 hover:text-white'
                 }`
@@ -304,12 +306,17 @@ export default function Navbar() {
             >
               {({ isActive }) => (
                 <>
+                  {isActive && (
+                    <span className="absolute top-0 h-[2px] w-8 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]" />
+                  )}
                   <Icon
                     size={21}
                     strokeWidth={isActive ? 2.5 : 1.8}
                     aria-hidden="true"
                   />
-                  <span>{label}</span>
+                  <span className="max-w-full truncate text-[9px] font-semibold sm:text-[10px]">
+                    {label}
+                  </span>
                 </>
               )}
             </NavLink>

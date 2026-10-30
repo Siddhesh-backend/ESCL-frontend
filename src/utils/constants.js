@@ -14,4 +14,5 @@ export const NAV_LINKS = [
   { label: 'Upcoming Series', to: '/upcoming-series' },
   { label: 'Points Table', to: '/points-table' },
   { label: 'Contact', to: '/contact' },
+  { label: 'Tournament', to: '/tournament' },
 ]

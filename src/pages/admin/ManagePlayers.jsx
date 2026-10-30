@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react'
 import { Plus, Eye, Trash2, Users, FileDown } from 'lucide-react'
 import { jsPDF } from 'jspdf'
@@ -171,7 +170,10 @@ export default function ManagePlayers() {
       setErrors({})
       refetch()
     } catch (err) {
-      showToast(err.message || 'Player creation failed', 'error')
+      showToast(
+        err.message || 'Player creation failed',
+        'error'
+      )
     } finally {
       setSaving(false)
     }
@@ -293,7 +295,7 @@ export default function ManagePlayers() {
           <button
             type="button"
             onClick={() => setViewTarget(row)}
-            className="focus-ring rounded-lg p-1.5 text-navy-700 hover:bg-navy-100"
+            className="focus-ring rounded-lg border border-transparent p-2 text-sky-300 transition hover:border-sky-400/20 hover:bg-sky-400/10"
             aria-label={`View ${getPlayerName(row)}`}
             title="View Player"
           >
@@ -303,7 +305,7 @@ export default function ManagePlayers() {
           <button
             type="button"
             onClick={() => setDeleteTarget(row)}
-            className="focus-ring rounded-lg p-1.5 text-loss hover:bg-red-50"
+            className="focus-ring rounded-lg border border-transparent p-2 text-red-400 transition hover:border-red-400/20 hover:bg-red-500/10"
             aria-label={`Delete ${getPlayerName(row)}`}
             title="Delete Player"
           >
@@ -315,7 +317,10 @@ export default function ManagePlayers() {
   ]
 
   const detailFields = [
-    { label: 'Full Name', value: viewTarget ? getPlayerName(viewTarget) : '-' },
+    {
+      label: 'Full Name',
+      value: viewTarget ? getPlayerName(viewTarget) : '-',
+    },
     { label: 'Email', value: viewTarget?.email },
     { label: 'College', value: viewTarget?.collegeName },
     { label: 'Branch', value: viewTarget?.branch },
@@ -329,280 +334,325 @@ export default function ManagePlayers() {
   ]
 
   return (
-    <div className="p-6 sm:p-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-navy-900">
-            Manage Players
-          </h1>
+    <div className="relative min-h-full overflow-hidden bg-[#061326] p-4 text-white sm:p-6 lg:p-8">
+      {/* Background glow effects */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-orange-500/[0.06] blur-[100px]"
+      />
 
-          <p className="text-sm text-navy-700/70">
-            View, register and remove player registrations.
-          </p>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-24 top-[30rem] h-72 w-72 rounded-full bg-blue-500/[0.05] blur-[100px]"
+      />
 
-          <p className="mt-1 text-sm font-medium text-navy-700">
-            Total Registered Players: {players.length}
-          </p>
-        </div>
+      <div className="relative">
+        {/* Header */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#243B53] pb-6">
+          <div>
+            <h1 className="font-display text-3xl font-black tracking-tight text-white">
+              Manage Players
+            </h1>
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="ghost"
-            onClick={handleDownloadPdf}
-          >
-            <FileDown size={16} />
-            Download PDF
-          </Button>
+            <p className="mt-1 text-sm text-slate-400">
+              View, register and remove player registrations.
+            </p>
 
-          <Button variant="primary" onClick={openCreate}>
-            <Plus size={16} />
-            Add Player
-          </Button>
-        </div>
-      </div>
+            <p className="mt-3 inline-flex rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-300">
+              Total Registered Players: {players.length}
+            </p>
+          </div>
 
-      {/* Search */}
-      <div className="mb-5">
-        <SearchBox
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by name or email..."
-        />
-      </div>
-
-      {/* Loading */}
-      {loading && <Loader label="Loading players..." />}
-
-      {/* Error */}
-      {!loading && error && (
-        <EmptyState
-          title="Couldn't load players"
-          description={error}
-        />
-      )}
-
-      {/* Players Table */}
-      {!loading && !error && (
-        <Table
-          columns={columns}
-          data={filtered}
-          emptyMessage="No players found."
-        />
-      )}
-
-      {!loading && !error && players.length === 0 && (
-        <div className="mt-4">
-          <EmptyState
-            icon={Users}
-            title="No players yet"
-            description="Add your first player to get started."
-          />
-        </div>
-      )}
-
-      {/* Add Player Modal */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Add Player"
-        footer={
-          <>
+          <div className="flex flex-wrap gap-3">
             <Button
               variant="ghost"
-              onClick={() => setModalOpen(false)}
+              onClick={handleDownloadPdf}
             >
-              Cancel
+              <FileDown size={16} />
+              Download PDF
             </Button>
 
             <Button
               variant="primary"
-              loading={saving}
-              onClick={handleSave}
+              onClick={openCreate}
             >
-              Create Player
+              <Plus size={16} />
+              Add Player
             </Button>
-          </>
-        }
-      >
-        <div className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-2">
-          <Input
-            id="p-fullName"
-            label="Full Name"
-            value={form.fullName}
-            error={errors.fullName}
-            onChange={(e) => update('fullName', e.target.value)}
-          />
+          </div>
+        </div>
 
-          <Input
-            id="p-collegeName"
-            label="College / University Name"
-            value={form.collegeName}
-            error={errors.collegeName}
-            onChange={(e) => update('collegeName', e.target.value)}
-          />
-
-          <Input
-            id="p-branch"
-            label="Branch"
-            value={form.branch}
-            error={errors.branch}
-            onChange={(e) => update('branch', e.target.value)}
-          />
-
-          <Input
-            id="p-year"
-            label="Year of Study"
-            value={form.year}
-            error={errors.year}
-            onChange={(e) => update('year', e.target.value)}
-          />
-
-          <Input
-            id="p-dob"
-            label="Date of Birth"
-            type="date"
-            value={form.dob}
-            error={errors.dob}
-            onChange={(e) => update('dob', e.target.value)}
-          />
-
-          <Input
-            id="p-position"
-            label="Preferred Playing Position"
-            value={form.position}
-            error={errors.position}
-            onChange={(e) => update('position', e.target.value)}
-          />
-
-          <Input
-            id="p-experience"
-            label="Level of Cricket Experience"
-            value={form.experience}
-            error={errors.experience}
-            onChange={(e) => update('experience', e.target.value)}
-          />
-
-          <Input
-            id="p-cricheroesUrl"
-            label="CricHeroes Account URL"
-            type="url"
-            value={form.cricheroesUrl}
-            error={errors.cricheroesUrl}
-            onChange={(e) => update('cricheroesUrl', e.target.value)}
-          />
-
-          <Input
-            id="p-basePrice"
-            label="Base Price"
-            type="number"
-            value={form.basePrice}
-            onChange={(e) => update('basePrice', e.target.value)}
-          />
-
-          <Input
-            id="p-paymentMethod"
-            label="Payment Method"
-            value={form.paymentMethod}
-            error={errors.paymentMethod}
-            onChange={(e) => update('paymentMethod', e.target.value)}
-          />
-
-          <Input
-            id="p-email"
-            label="Email"
-            type="email"
-            value={form.email}
-            error={errors.email}
-            onChange={(e) => update('email', e.target.value)}
-          />
-
-          <Input
-            id="p-password"
-            label="Password"
-            type="password"
-            value={form.password}
-            error={errors.password}
-            onChange={(e) => update('password', e.target.value)}
+        {/* Search */}
+        <div className="mb-5 rounded-2xl border border-[#243B53] bg-[#0B1B30] p-3 sm:p-4">
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by name or email..."
           />
         </div>
-      </Modal>
 
-      {/* View Player Modal - Read Only */}
-      <Modal
-        open={!!viewTarget}
-        onClose={() => setViewTarget(null)}
-        title="Player Details"
-        footer={
-          <Button
-            variant="ghost"
-            onClick={() => setViewTarget(null)}
-          >
-            Close
-          </Button>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          {detailFields.map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-lg border border-navy-100 p-3"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-navy-700/60">
-                {label}
-              </p>
+        {/* Loading */}
+        {loading && (
+          <Loader label="Loading players..." />
+        )}
 
-              {label === 'CricHeroes URL' && value ? (
-                <a
-                  href={String(value)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 block break-all text-sm text-orange-600 underline"
-                >
-                  Open Profile
-                </a>
-              ) : (
-                <p className="mt-1 break-words text-sm font-medium text-navy-900">
-                  {getPlayerValue(value)}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </Modal>
+        {/* Error */}
+        {!loading && error && (
+          <EmptyState
+            title="Couldn't load players"
+            description={error}
+          />
+        )}
 
-      {/* Delete Confirmation */}
-      <Modal
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Delete Player"
-        footer={
-          <>
+        {/* Players Table */}
+        {!loading && !error && (
+          <div className="overflow-hidden rounded-2xl border border-[#243B53] bg-[#0B1B30] shadow-xl shadow-black/10">
+            <Table
+              columns={columns}
+              data={filtered}
+              emptyMessage="No players found."
+            />
+          </div>
+        )}
+
+        {/* Empty players state */}
+        {!loading && !error && players.length === 0 && (
+          <div className="mt-4">
+            <EmptyState
+              icon={Users}
+              title="No players yet"
+              description="Add your first player to get started."
+            />
+          </div>
+        )}
+
+        {/* Add Player Modal */}
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title="Add Player"
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => setModalOpen(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="primary"
+                loading={saving}
+                onClick={handleSave}
+              >
+                Create Player
+              </Button>
+            </>
+          }
+        >
+          <div className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-2">
+            <Input
+              id="p-fullName"
+              label="Full Name"
+              value={form.fullName}
+              error={errors.fullName}
+              onChange={(e) =>
+                update('fullName', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-collegeName"
+              label="College / University Name"
+              value={form.collegeName}
+              error={errors.collegeName}
+              onChange={(e) =>
+                update('collegeName', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-branch"
+              label="Branch"
+              value={form.branch}
+              error={errors.branch}
+              onChange={(e) =>
+                update('branch', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-year"
+              label="Year of Study"
+              value={form.year}
+              error={errors.year}
+              onChange={(e) =>
+                update('year', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-dob"
+              label="Date of Birth"
+              type="date"
+              value={form.dob}
+              error={errors.dob}
+              onChange={(e) =>
+                update('dob', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-position"
+              label="Preferred Playing Position"
+              value={form.position}
+              error={errors.position}
+              onChange={(e) =>
+                update('position', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-experience"
+              label="Level of Cricket Experience"
+              value={form.experience}
+              error={errors.experience}
+              onChange={(e) =>
+                update('experience', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-cricheroesUrl"
+              label="CricHeroes Account URL"
+              type="url"
+              value={form.cricheroesUrl}
+              error={errors.cricheroesUrl}
+              onChange={(e) =>
+                update('cricheroesUrl', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-basePrice"
+              label="Base Price"
+              type="number"
+              value={form.basePrice}
+              onChange={(e) =>
+                update('basePrice', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-paymentMethod"
+              label="Payment Method"
+              value={form.paymentMethod}
+              error={errors.paymentMethod}
+              onChange={(e) =>
+                update('paymentMethod', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-email"
+              label="Email"
+              type="email"
+              value={form.email}
+              error={errors.email}
+              onChange={(e) =>
+                update('email', e.target.value)
+              }
+            />
+
+            <Input
+              id="p-password"
+              label="Password"
+              type="password"
+              value={form.password}
+              error={errors.password}
+              onChange={(e) =>
+                update('password', e.target.value)
+              }
+            />
+          </div>
+        </Modal>
+
+        {/* View Player Modal */}
+        <Modal
+          open={!!viewTarget}
+          onClose={() => setViewTarget(null)}
+          title="Player Details"
+          footer={
             <Button
               variant="ghost"
-              onClick={() => setDeleteTarget(null)}
+              onClick={() => setViewTarget(null)}
             >
-              Cancel
+              Close
             </Button>
+          }
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            {detailFields.map(({ label, value }) => (
+              <div
+                key={label}
+                className="rounded-xl border border-[#243B53] bg-[#0B1B30] p-4"
+              >
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
 
-            <Button
-              variant="danger"
-              loading={deleting}
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-navy-700">
-          Are you sure you want to delete{' '}
-          <strong>
-            {getPlayerName(deleteTarget)}
-          </strong>
-          ? This action cannot be undone.
-        </p>
-      </Modal>
+                {label === 'CricHeroes URL' && value ? (
+                  <a
+                    href={String(value)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 block break-all text-sm text-orange-400 underline"
+                  >
+                    Open Profile
+                  </a>
+                ) : (
+                  <p className="mt-1 break-words text-sm font-medium text-white">
+                    {getPlayerValue(value)}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          title="Delete Player"
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="danger"
+                loading={deleting}
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm leading-6 text-slate-300">
+            Are you sure you want to delete{' '}
+            <strong className="text-white">
+              {getPlayerName(deleteTarget)}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+        </Modal>
+      </div>
     </div>
   )
 }
