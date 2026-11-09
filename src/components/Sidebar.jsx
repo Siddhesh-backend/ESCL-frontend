@@ -9,6 +9,7 @@ import {
   Mail,
   Home,
   Medal,
+  ClipboardList,
 } from 'lucide-react'
 
 const LINKS = [
@@ -23,6 +24,12 @@ const LINKS = [
     label: 'Manage Players',
     shortLabel: 'Players',
     icon: Users,
+  },
+  {
+    to: '/admin/team-registrations',
+    label: 'Team Registrations',
+    shortLabel: 'Teams',
+    icon: ClipboardList,
   },
   {
     to: '/admin/schedule',
@@ -81,7 +88,6 @@ export default function Sidebar() {
           aria-label="Admin navigation"
           className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
         >
-          {/* Visit Website */}
           <NavLink to="/" end className={linkClass}>
             <Home size={18} />
             Visit Home page
@@ -108,7 +114,6 @@ export default function Sidebar() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-navy-900 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <div className="grid grid-cols-4 sm:grid-cols-8">
-          {/* Website Home */}
           <NavLink
             to="/"
             end

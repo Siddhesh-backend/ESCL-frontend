@@ -5,12 +5,11 @@ import {
   Trophy,
   ArrowLeft,
   ShieldCheck,
-  Mail,
-  LockKeyhole,
 } from 'lucide-react'
 
 import Input from '../components/Input'
 import Button from '../components/Button'
+import CricketAnimation from '../components/CricketAnimation'
 
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -74,7 +73,7 @@ export default function Login() {
         password: form.password,
       })
 
-      showToast('Logged in successfully', 'success')
+      showToast('Admin logged in successfully', 'success')
       navigate('/admin/dashboard')
     } catch (err) {
       showToast(err.message || 'Login failed', 'error')
@@ -84,11 +83,12 @@ export default function Login() {
   }
 
   return (
-    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#061326] px-4 py-8 text-white sm:py-12">
-      {/* Stadium background */}
+    <main className="relative isolate flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-[#061326] px-4 py-8 text-white sm:py-12">
+
+      {/* Stadium Background */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-25"
+        className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-25"
         style={{
           backgroundImage: "url('/escl-stadium-hero.png')",
         }}
@@ -96,20 +96,27 @@ export default function Login() {
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#061326]/70 via-[#061326]/85 to-[#061326]"
+        className="pointer-events-none absolute inset-0 -z-20 bg-gradient-to-b from-[#061326]/70 via-[#061326]/85 to-[#061326]"
+      />
+
+      {/* Cricket Animation */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <CricketAnimation />
+      </div>
+
+      {/* Ambient Glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-24 top-20 z-0 h-72 w-72 rounded-full bg-orange-500/10 blur-[100px]"
       />
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-orange-500/10 blur-[100px]"
+        className="pointer-events-none absolute -right-24 bottom-10 z-0 h-72 w-72 rounded-full bg-blue-500/10 blur-[100px]"
       />
 
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-blue-500/10 blur-[100px]"
-      />
-
-      <div className="relative w-full max-w-md">
+      {/* Login Content */}
+      <div className="relative z-10 w-full max-w-md">
         <Link
           to="/"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-orange-400"
@@ -119,6 +126,7 @@ export default function Login() {
         </Link>
 
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b1b30]/90 shadow-2xl shadow-black/30 backdrop-blur-xl">
+
           {/* Header */}
           <div className="border-b border-white/10 bg-white/[0.025] px-6 pb-7 pt-8 text-center sm:px-8">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-orange-400/20 bg-orange-500/10 text-orange-400 shadow-lg shadow-orange-950/20">
@@ -138,7 +146,7 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Form */}
+          {/* Login Form */}
           <form
             onSubmit={handleSubmit}
             noValidate
@@ -151,6 +159,29 @@ export default function Login() {
               </p>
             </div>
 
+            {/* Login Role */}
+            <div>
+              <label
+                htmlFor="loginRole"
+                className="mb-2 block text-sm font-medium text-slate-300"
+              >
+                Login As
+              </label>
+
+              <select
+                id="loginRole"
+                value="ADMIN"
+                onChange={() => { }}
+                className="w-full rounded-xl border border-white/10 bg-[#0b1b30] px-4 py-3 text-sm text-white outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+              >
+                <option value="ADMIN">Admin</option>
+                <option value="PLAYER" disabled>
+                  Player (Coming Soon)
+                </option>
+              </select>
+            </div>
+
+            {/* Email */}
             <div className={inputClass}>
               <Input
                 id="email"
@@ -163,6 +194,7 @@ export default function Login() {
               />
             </div>
 
+            {/* Password */}
             <div className={inputClass}>
               <Input
                 id="password"
@@ -185,7 +217,7 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Register link */}
+          {/* Registration Link */}
           <div className="border-t border-white/10 bg-black/10 px-5 py-5 text-center">
             <p className="text-sm text-slate-400">
               Don't have an account?

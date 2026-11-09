@@ -1,9 +1,20 @@
-import { useMemo, useState } from 'react'
-import { Plus, Eye, Trash2, Users, FileDown } from 'lucide-react'
+
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Plus,
+  Eye,
+  Trash2,
+  Users,
+  FileDown,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+} from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 import playerService from '../../services/playerService'
+import api from '../../services/api'
 import useFetch from '../../hooks/useFetch'
 import useDebounce from '../../hooks/useDebounce'
 import Table from '../../components/Table'
@@ -35,14 +46,6 @@ const EMPTY_FORM = {
   paymentMethod: '',
 }
 
-const PDF_COLUMNS = [
-  { header: 'Name', dataKey: 'name' },
-  { header: 'Email', dataKey: 'email' },
-  { header: 'College', dataKey: 'college' },
-  { header: 'Branch', dataKey: 'branch' },
-  { header: 'Position', dataKey: 'position' },
-]
-
 const getPlayerName = (player) =>
   player?.fullName || player?.name || '-'
 
@@ -51,6 +54,11 @@ const getPlayerValue = (value) =>
     ? '-'
     : String(value)
 
+const getList = (data) => {
+  if (Array.isArray(data)) return data
+  return data?.content || data?.data || []
+}
+
 export default function ManagePlayers() {
   const { data, loading, error, refetch } = useFetch(
     () => playerService.getAll(),
@@ -58,6 +66,14 @@ export default function ManagePlayers() {
   )
 
   const { showToast } = useToast()
+
+  const [teams, setTeams] = useState([])
+  const [teamsLoading, setTeamsLoading] = useState(true)
+  const [teamsError, setTeamsError] = useState('')
+
+  const [invitedOpen, setInvitedOpen] = useState(true)
+  const [teamPlayersOpen, setTeamPlayersOpen] = useState(true)
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false)
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search)
@@ -71,25 +87,91 @@ export default function ManagePlayers() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Fetch team registrations separately
+  async function fetchTeams() {
+    try {
+      setTeamsLoading(true)
+      setTeamsError('')
+
+      const response = await api.get('/admin/team-registrations')
+      setTeams(getList(response.data))
+    } catch (err) {
+      setTeamsError(
+        err.message || 'Unable to load team registration players.'
+      )
+    } finally {
+      setTeamsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTeams()
+  }, [])
+
   const players = Array.isArray(data) ? data : []
 
-  const filtered = useMemo(() => {
-    if (!debouncedSearch) {
-      return players
-    }
+  // Flatten players from all registered teams
+  const teamPlayers = useMemo(() => {
+    return teams.flatMap((team) =>
+      (team.players || []).map((player) => ({
+        ...player,
+        teamId: team.id,
+        teamName: team.teamName,
+        collegeUniversity: team.collegeUniversity,
+      }))
+    )
+  }, [teams])
+
+  // Identify team player IDs to avoid duplicate entries
+  const teamPlayerIds = useMemo(() => {
+    return new Set(
+      teamPlayers
+        .filter((player) => player.id !== null && player.id !== undefined)
+        .map((player) => String(player.id))
+    )
+  }, [teamPlayers])
+
+  // Only invited registrations remain in this list
+  const invitedPlayers = useMemo(() => {
+    return players.filter(
+      (player) => !teamPlayerIds.has(String(player.id))
+    )
+  }, [players, teamPlayerIds])
+
+  // Search invited players
+  const filteredInvitedPlayers = useMemo(() => {
+    if (!debouncedSearch) return invitedPlayers
 
     const searchValue = debouncedSearch.toLowerCase()
 
-    return players.filter((player) => {
+    return invitedPlayers.filter((player) => {
       const name = getPlayerName(player).toLowerCase()
       const email = (player.email || '').toLowerCase()
+      const college = (player.collegeName || '').toLowerCase()
 
       return (
         name.includes(searchValue) ||
-        email.includes(searchValue)
+        email.includes(searchValue) ||
+        college.includes(searchValue)
       )
     })
-  }, [players, debouncedSearch])
+  }, [invitedPlayers, debouncedSearch])
+
+  // Search team registration players
+  const filteredTeamPlayers = useMemo(() => {
+    if (!debouncedSearch) return teamPlayers
+
+    const searchValue = debouncedSearch.toLowerCase()
+
+    return teamPlayers.filter((player) => {
+      return (
+        getPlayerName(player).toLowerCase().includes(searchValue) ||
+        (player.collegeId || '').toLowerCase().includes(searchValue) ||
+        (player.contactNumber || '').toLowerCase().includes(searchValue) ||
+        (player.teamName || '').toLowerCase().includes(searchValue)
+      )
+    })
+  }, [teamPlayers, debouncedSearch])
 
   function openCreate() {
     setForm({ ...EMPTY_FORM })
@@ -197,14 +279,25 @@ export default function ManagePlayers() {
     }
   }
 
-  function handleDownloadPdf() {
-    if (loading || error) {
+  // Download separate PDFs for invited and team players
+  function downloadPdf(type) {
+    if (type === 'invited' && (loading || error)) {
       showToast(
-        'Please wait until the players list loads successfully.',
+        'Please wait until invited players load successfully.',
         'error'
       )
       return
     }
+
+    if (type === 'team' && (teamsLoading || teamsError)) {
+      showToast(
+        'Please wait until team players load successfully.',
+        'error'
+      )
+      return
+    }
+
+    const isInvited = type === 'invited'
 
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -212,18 +305,52 @@ export default function ManagePlayers() {
       format: 'a4',
     })
 
-    doc.setFontSize(16)
-    doc.text('ESCL - Registered Players', 14, 15)
+    const columns = isInvited
+      ? [
+        { header: 'Name', dataKey: 'name' },
+        { header: 'Email', dataKey: 'email' },
+        { header: 'College', dataKey: 'college' },
+        { header: 'Branch', dataKey: 'branch' },
+        { header: 'Position', dataKey: 'position' },
+      ]
+      : [
+        { header: 'Player Name', dataKey: 'name' },
+        { header: 'Team Name', dataKey: 'team' },
+        { header: 'College ID', dataKey: 'collegeId' },
+        { header: 'Jersey No.', dataKey: 'jersey' },
+        { header: 'Contact', dataKey: 'contact' },
+      ]
 
-    autoTable(doc, {
-      columns: PDF_COLUMNS,
-      body: players.map((player) => ({
+    const body = isInvited
+      ? invitedPlayers.map((player) => ({
         name: getPlayerName(player),
         email: getPlayerValue(player.email),
         college: getPlayerValue(player.collegeName),
         branch: getPlayerValue(player.branch),
         position: getPlayerValue(player.position),
-      })),
+      }))
+      : teamPlayers.map((player) => ({
+        name: getPlayerName(player),
+        team: getPlayerValue(player.teamName),
+        collegeId: getPlayerValue(player.collegeId),
+        jersey: getPlayerValue(player.jerseyNumber),
+        contact: getPlayerValue(player.contactNumber),
+      }))
+
+    const title = isInvited
+      ? 'ESCL - Invited Player Registrations'
+      : 'ESCL - Team Registration Players'
+
+    const fileName = isInvited
+      ? 'ESCL_Invited_Players.pdf'
+      : 'ESCL_Team_Registration_Players.pdf'
+
+    doc.setFontSize(16)
+    doc.text(title, 14, 15)
+
+    autoTable(doc, {
+      columns,
+      body,
       startY: 22,
       margin: {
         top: 15,
@@ -242,14 +369,11 @@ export default function ManagePlayers() {
       showHead: 'everyPage',
     })
 
-    const totalText = `Total Registered Players: ${players.length}`
+    const totalText = `Total Players: ${body.length}`
     const pageHeight = doc.internal.pageSize.getHeight()
-    const finalY = doc.lastAutoTable.finalY
-    const footerSpace = 12
+    let totalY = doc.lastAutoTable.finalY + 9
 
-    let totalY = finalY + 9
-
-    if (totalY > pageHeight - footerSpace) {
+    if (totalY > pageHeight - 12) {
       doc.addPage()
       totalY = 18
     }
@@ -258,7 +382,8 @@ export default function ManagePlayers() {
     doc.setFont('helvetica', 'bold')
     doc.text(totalText, 14, totalY)
 
-    doc.save('ESCL_Registered_Players.pdf')
+    doc.save(fileName)
+    setPdfMenuOpen(false)
   }
 
   const columns = [
@@ -355,22 +480,64 @@ export default function ManagePlayers() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-400">
-              View, register and remove player registrations.
+              Manage invited players and team registration rosters separately.
             </p>
 
             <p className="mt-3 inline-flex rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-300">
-              Total Registered Players: {players.length}
+              Total Players: {invitedPlayers.length + teamPlayers.length}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="ghost"
-              onClick={handleDownloadPdf}
-            >
-              <FileDown size={16} />
-              Download PDF
-            </Button>
+            {/* PDF Download Dropdown */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                onClick={() => setPdfMenuOpen((current) => !current)}
+              >
+                <FileDown size={16} />
+                Download PDF
+                <ChevronDown size={16} />
+              </Button>
+
+              {pdfMenuOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#243B53] bg-[#10233B] shadow-2xl">
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf('invited')}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white transition hover:bg-orange-500/10"
+                  >
+                    <FileDown size={17} className="text-orange-400" />
+                    <span>
+                      <span className="block font-semibold">
+                        Invited Players PDF
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {invitedPlayers.length} players
+                      </span>
+                    </span>
+                  </button>
+
+                  <div className="border-t border-[#243B53]" />
+
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf('team')}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white transition hover:bg-sky-500/10"
+                  >
+                    <FileDown size={17} className="text-sky-400" />
+                    <span>
+                      <span className="block font-semibold">
+                        Team Registration PDF
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {teamPlayers.length} players
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             <Button
               variant="primary"
@@ -387,44 +554,205 @@ export default function ManagePlayers() {
           <SearchBox
             value={search}
             onChange={setSearch}
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, college ID or team..."
           />
         </div>
 
-        {/* Loading */}
-        {loading && (
-          <Loader label="Loading players..." />
-        )}
+        {/* Invited Player Registrations */}
+        <section className="mb-5 overflow-hidden rounded-2xl border border-[#243B53] bg-[#0B1B30] shadow-xl shadow-black/10">
+          <button
+            type="button"
+            onClick={() => setInvitedOpen((current) => !current)}
+            className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left transition hover:bg-white/[0.03]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-3 text-orange-400">
+                <Users size={21} />
+              </div>
 
-        {/* Error */}
-        {!loading && error && (
-          <EmptyState
-            title="Couldn't load players"
-            description={error}
-          />
-        )}
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  Invited Player Registrations
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  Players registered through the invited player form.
+                </p>
+              </div>
 
-        {/* Players Table */}
-        {!loading && !error && (
-          <div className="overflow-hidden rounded-2xl border border-[#243B53] bg-[#0B1B30] shadow-xl shadow-black/10">
-            <Table
-              columns={columns}
-              data={filtered}
-              emptyMessage="No players found."
-            />
-          </div>
-        )}
+              <span className="rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-300">
+                {invitedPlayers.length}
+              </span>
+            </div>
 
-        {/* Empty players state */}
-        {!loading && !error && players.length === 0 && (
-          <div className="mt-4">
-            <EmptyState
-              icon={Users}
-              title="No players yet"
-              description="Add your first player to get started."
-            />
-          </div>
-        )}
+            {invitedOpen
+              ? <ChevronUp size={20} className="text-slate-400" />
+              : <ChevronDown size={20} className="text-slate-400" />}
+          </button>
+
+          {invitedOpen && (
+            <div className="border-t border-[#243B53] p-4 sm:p-5">
+              {loading && (
+                <Loader label="Loading invited players..." />
+              )}
+
+              {!loading && error && (
+                <EmptyState
+                  title="Couldn't load invited players"
+                  description={error}
+                />
+              )}
+
+              {!loading && !error && (
+                <>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm text-slate-400">
+                      Showing {filteredInvitedPlayers.length} of {invitedPlayers.length} invited players
+                    </p>
+                  </div>
+
+                  <div className="overflow-hidden rounded-xl border border-[#243B53]">
+                    <Table
+                      columns={columns}
+                      data={filteredInvitedPlayers}
+                      emptyMessage="No invited players found."
+                    />
+                  </div>
+
+                  {invitedPlayers.length === 0 && (
+                    <div className="mt-4">
+                      <EmptyState
+                        icon={Users}
+                        title="No invited players yet"
+                        description="Invited player registrations will appear here."
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* Team Registration Players */}
+        <section className="overflow-hidden rounded-2xl border border-[#243B53] bg-[#0B1B30] shadow-xl shadow-black/10">
+          <button
+            type="button"
+            onClick={() => setTeamPlayersOpen((current) => !current)}
+            className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left transition hover:bg-white/[0.03]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-sky-400/20 bg-sky-500/10 p-3 text-sky-300">
+                <Users size={21} />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  Team Registration Players
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  Players registered as part of a team roster.
+                </p>
+              </div>
+
+              <span className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-300">
+                {teamPlayers.length}
+              </span>
+            </div>
+
+            {teamPlayersOpen
+              ? <ChevronUp size={20} className="text-slate-400" />
+              : <ChevronDown size={20} className="text-slate-400" />}
+          </button>
+
+          {teamPlayersOpen && (
+            <div className="border-t border-[#243B53] p-4 sm:p-5">
+              {teamsLoading && (
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400">
+                  <RefreshCw size={17} className="animate-spin" />
+                  Loading team registration players...
+                </div>
+              )}
+
+              {!teamsLoading && teamsError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+                  <p className="text-sm text-red-300">
+                    {teamsError}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={fetchTeams}
+                    className="mt-3 flex items-center gap-2 text-sm font-semibold text-orange-400 hover:text-orange-300"
+                  >
+                    <RefreshCw size={15} />
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {!teamsLoading && !teamsError && (
+                <>
+                  <p className="mb-3 text-sm text-slate-400">
+                    Showing {filteredTeamPlayers.length} of {teamPlayers.length} team players
+                  </p>
+
+                  {filteredTeamPlayers.length === 0 ? (
+                    <EmptyState
+                      icon={Users}
+                      title="No team players found"
+                      description="Team registration players will appear here."
+                    />
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-[#243B53]">
+                      <table className="w-full min-w-[720px] text-left text-sm">
+                        <thead className="border-b border-[#243B53] bg-[#10233B] text-xs uppercase tracking-wide text-slate-400">
+                          <tr>
+                            <th className="px-4 py-4">Player Name</th>
+                            <th className="px-4 py-4">Team Name</th>
+                            <th className="px-4 py-4">College ID</th>
+                            <th className="px-4 py-4">Jersey No.</th>
+                            <th className="px-4 py-4">Contact</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {filteredTeamPlayers.map((player, index) => (
+                            <tr
+                              key={player.id ?? `${player.teamId}-${index}`}
+                              className="border-b border-[#243B53]/70 transition last:border-0 hover:bg-white/[0.025]"
+                            >
+                              <td className="px-4 py-4 font-semibold text-white">
+                                {getPlayerName(player)}
+                              </td>
+
+                              <td className="px-4 py-4">
+                                <span className="rounded-lg border border-orange-400/20 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold text-orange-300">
+                                  {getPlayerValue(player.teamName)}
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-4 text-slate-300">
+                                {getPlayerValue(player.collegeId)}
+                              </td>
+
+                              <td className="px-4 py-4 text-slate-300">
+                                {getPlayerValue(player.jerseyNumber)}
+                              </td>
+
+                              <td className="px-4 py-4 text-slate-300">
+                                {getPlayerValue(player.contactNumber)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </section>
 
         {/* Add Player Modal */}
         <Modal
@@ -456,9 +784,7 @@ export default function ManagePlayers() {
               label="Full Name"
               value={form.fullName}
               error={errors.fullName}
-              onChange={(e) =>
-                update('fullName', e.target.value)
-              }
+              onChange={(e) => update('fullName', e.target.value)}
             />
 
             <Input
@@ -466,9 +792,7 @@ export default function ManagePlayers() {
               label="College / University Name"
               value={form.collegeName}
               error={errors.collegeName}
-              onChange={(e) =>
-                update('collegeName', e.target.value)
-              }
+              onChange={(e) => update('collegeName', e.target.value)}
             />
 
             <Input
@@ -476,9 +800,7 @@ export default function ManagePlayers() {
               label="Branch"
               value={form.branch}
               error={errors.branch}
-              onChange={(e) =>
-                update('branch', e.target.value)
-              }
+              onChange={(e) => update('branch', e.target.value)}
             />
 
             <Input
@@ -486,9 +808,7 @@ export default function ManagePlayers() {
               label="Year of Study"
               value={form.year}
               error={errors.year}
-              onChange={(e) =>
-                update('year', e.target.value)
-              }
+              onChange={(e) => update('year', e.target.value)}
             />
 
             <Input
@@ -497,9 +817,7 @@ export default function ManagePlayers() {
               type="date"
               value={form.dob}
               error={errors.dob}
-              onChange={(e) =>
-                update('dob', e.target.value)
-              }
+              onChange={(e) => update('dob', e.target.value)}
             />
 
             <Input
@@ -507,9 +825,7 @@ export default function ManagePlayers() {
               label="Preferred Playing Position"
               value={form.position}
               error={errors.position}
-              onChange={(e) =>
-                update('position', e.target.value)
-              }
+              onChange={(e) => update('position', e.target.value)}
             />
 
             <Input
@@ -517,9 +833,7 @@ export default function ManagePlayers() {
               label="Level of Cricket Experience"
               value={form.experience}
               error={errors.experience}
-              onChange={(e) =>
-                update('experience', e.target.value)
-              }
+              onChange={(e) => update('experience', e.target.value)}
             />
 
             <Input
@@ -528,9 +842,7 @@ export default function ManagePlayers() {
               type="url"
               value={form.cricheroesUrl}
               error={errors.cricheroesUrl}
-              onChange={(e) =>
-                update('cricheroesUrl', e.target.value)
-              }
+              onChange={(e) => update('cricheroesUrl', e.target.value)}
             />
 
             <Input
@@ -538,9 +850,7 @@ export default function ManagePlayers() {
               label="Base Price"
               type="number"
               value={form.basePrice}
-              onChange={(e) =>
-                update('basePrice', e.target.value)
-              }
+              onChange={(e) => update('basePrice', e.target.value)}
             />
 
             <Input
@@ -548,9 +858,7 @@ export default function ManagePlayers() {
               label="Payment Method"
               value={form.paymentMethod}
               error={errors.paymentMethod}
-              onChange={(e) =>
-                update('paymentMethod', e.target.value)
-              }
+              onChange={(e) => update('paymentMethod', e.target.value)}
             />
 
             <Input
@@ -559,9 +867,7 @@ export default function ManagePlayers() {
               type="email"
               value={form.email}
               error={errors.email}
-              onChange={(e) =>
-                update('email', e.target.value)
-              }
+              onChange={(e) => update('email', e.target.value)}
             />
 
             <Input
@@ -570,9 +876,7 @@ export default function ManagePlayers() {
               type="password"
               value={form.password}
               error={errors.password}
-              onChange={(e) =>
-                update('password', e.target.value)
-              }
+              onChange={(e) => update('password', e.target.value)}
             />
           </div>
         </Modal>

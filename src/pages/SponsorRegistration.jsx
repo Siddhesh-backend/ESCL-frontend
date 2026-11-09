@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -8,10 +7,14 @@ import {
     UserRound,
     Target,
     CheckCircle2,
-    Upload,
     Globe,
     Send,
+    Trophy,
+    Sparkles,
 } from 'lucide-react'
+
+import api from '../services/api'
+import './SponsorRegistrationAnimation.css'
 
 const initialForm = {
     companyName: '',
@@ -32,7 +35,7 @@ const initialForm = {
 }
 
 const inputClass =
-    'w-full rounded-xl border border-white/10 bg-[#0B1220] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-500 focus:border-orange-500'
+    'sponsor-input w-full rounded-xl border border-white/10 bg-[#0B1220] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-500 focus:border-orange-500'
 
 const labelClass = 'mb-2 block text-sm font-medium text-gray-300'
 
@@ -73,7 +76,7 @@ const promotionOptions = [
 
 function SectionHeading({ number, icon: Icon, title, description }) {
     return (
-        <div className="mb-6 flex items-start gap-3">
+        <div className="sponsor-section-heading mb-6 flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
                 <Icon size={21} />
             </div>
@@ -102,8 +105,9 @@ function Field({ label, required = false, children }) {
 
 export default function SponsorRegistration() {
     const [form, setForm] = useState(initialForm)
-    const [logo, setLogo] = useState(null)
     const [notice, setNotice] = useState('')
+    const [noticeType, setNoticeType] = useState('success')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const updateField = (event) => {
         const { name, value, type, checked } = event.target
@@ -112,6 +116,7 @@ export default function SponsorRegistration() {
             ...previous,
             [name]: type === 'checkbox' ? checked : value,
         }))
+
         setNotice('')
     }
 
@@ -122,48 +127,147 @@ export default function SponsorRegistration() {
                 ? previous.promotionPreferences.filter((item) => item !== option)
                 : [...previous.promotionPreferences, option],
         }))
+
+        setNotice('')
     }
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault()
 
-        // Frontend preview only. Backend integration will be added later.
-        setNotice(
-            'Form validation successful! Backend integration is pending. Your enquiry has not been submitted or saved.'
-        )
+        if (isSubmitting) return
+
+        setNotice('')
+
+        if (!form.termsAccepted) {
+            setNoticeType('error')
+            setNotice('Please confirm that the information provided is accurate.')
+            return
+        }
+
+        setIsSubmitting(true)
+
+        const payload = {
+            companyName: form.companyName.trim(),
+            industry: form.industry,
+            website: form.website.trim() || null,
+
+            contactFullName: form.contactPerson.trim(),
+            designation: form.designation.trim(),
+            businessEmail: form.email.trim(),
+            mobileNumber: form.phone.trim(),
+            preferredContactMethod: form.contactMethod,
+
+            sponsorshipCategory: form.sponsorshipType,
+            budgetRange: form.budget,
+            contributionType: form.contributionType,
+
+            promotionPreferences: form.promotionPreferences.join(', '),
+            message: form.message.trim(),
+
+            accuracyConfirmed: form.termsAccepted,
+            contactConsent: form.contactConsent,
+        }
+
+        try {
+            const response = await api.post(
+                '/sponsor-registrations',
+                payload
+            )
+
+            const registration = response.data || {}
+
+            setNoticeType('success')
+            setNotice(
+                `Sponsorship enquiry submitted successfully! Your enquiry ID is ${registration.id ?? 'generated'}. Our ESCL team will contact you soon.`
+            )
+
+            setForm({ ...initialForm })
+
+        } catch (error) {
+            console.error('Sponsor registration failed:', error)
+
+            setNoticeType('error')
+
+            setNotice(
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                error?.message ||
+                'Unable to submit your sponsorship enquiry. Please try again.'
+            )
+        } finally {
+            setIsSubmitting(false)
+
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+            })
+        }
+    }
+
+    const handleReset = () => {
+        if (isSubmitting) return
+
+        setForm({ ...initialForm })
+        setNotice('')
     }
 
     return (
-        <main className="min-h-screen bg-[#0B1220] px-4 py-8 text-white sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-5xl">
+        <main className="sponsor-page min-h-screen bg-[#0B1220] px-4 py-8 text-white sm:px-6 lg:px-8">
+
+            {/* Cricket Stadium Animation Background */}
+            <div className="sponsor-stadium">
+                <div className="sponsor-light sponsor-light-one" />
+                <div className="sponsor-light sponsor-light-two" />
+                <div className="sponsor-light sponsor-light-three" />
+                <div className="sponsor-particles">
+                    {Array.from({ length: 18 }).map((_, index) => (
+                        <span key={index} />
+                    ))}
+                </div>
+                <div className="sponsor-cricket-ball" />
+            </div>
+
+            <div className="relative z-10 mx-auto max-w-5xl">
+
                 <Link
                     to="/"
-                    className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-orange-400"
+                    className="sponsor-back mb-6 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-orange-400"
                 >
                     <ArrowLeft size={18} />
                     Back to Home
                 </Link>
 
-                <header className="relative mb-8 overflow-hidden rounded-3xl border border-white/10 bg-[#111B2E] p-6 sm:p-9">
-                    <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl" />
+                {/* Premium Hero */}
+                <header className="sponsor-hero relative mb-8 overflow-hidden rounded-3xl border border-white/10 bg-[#111B2E] p-6 sm:p-9">
+
+                    <div className="sponsor-hero-glow" />
+                    <div className="sponsor-hero-lines" />
 
                     <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
+
+                        <div className="sponsor-hero-icon flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
                             <Handshake size={32} />
                         </div>
 
                         <div className="flex-1">
-                            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-400">
+                            <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-400">
+                                <Sparkles size={14} />
                                 Engineering Students Cricket League
                             </p>
+
                             <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
                                 Sponsorship Enquiry
                             </h1>
+
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400 sm:text-base">
-                                Partner with ESCL to support cricketing talent
-                                and connect your brand with the sporting community.
-                                Share your details and sponsorship interests below.
+                                Become a part of the ESCL championship.
+                                Partner with us, support emerging cricketing
+                                talent and put your brand in the spotlight.
                             </p>
+                        </div>
+
+                        <div className="sponsor-trophy hidden shrink-0 sm:flex">
+                            <Trophy size={68} strokeWidth={1.2} />
                         </div>
                     </div>
 
@@ -171,11 +275,17 @@ export default function SponsorRegistration() {
                         <span className="rounded-full border border-white/10 px-3 py-2">
                             <span className="text-orange-400">*</span> Required fields
                         </span>
+
                         <span className="rounded-full border border-white/10 px-3 py-2">
                             Corporate Partnerships
                         </span>
+
                         <span className="rounded-full border border-white/10 px-3 py-2">
                             Tournament Branding
+                        </span>
+
+                        <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-orange-300">
+                            Official ESCL Partnership
                         </span>
                     </div>
                 </header>
@@ -183,7 +293,10 @@ export default function SponsorRegistration() {
                 {notice && (
                     <div
                         role="status"
-                        className="mb-6 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm leading-6 text-orange-200"
+                        className={`sponsor-notice mb-6 rounded-xl border p-4 text-sm leading-6 ${noticeType === 'success'
+                            ? 'border-green-500/30 bg-green-500/10 text-green-200'
+                            : 'border-red-500/30 bg-red-500/10 text-red-200'
+                            }`}
                     >
                         <div className="flex items-start gap-3">
                             <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
@@ -193,7 +306,9 @@ export default function SponsorRegistration() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <section className="rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
+
+                    {/* SECTION 01 */}
+                    <section className="sponsor-card sponsor-card-one rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
                         <SectionHeading
                             number="01"
                             icon={Building2}
@@ -202,6 +317,7 @@ export default function SponsorRegistration() {
                         />
 
                         <div className="grid gap-5 sm:grid-cols-2">
+
                             <Field label="Company / Brand Name" required>
                                 <input
                                     className={inputClass}
@@ -251,26 +367,11 @@ export default function SponsorRegistration() {
                                 </div>
                             </Field>
 
-                            <Field label="Company Logo (Optional)">
-                                <label className="flex min-h-[46px] cursor-pointer items-center gap-3 rounded-xl border border-dashed border-white/20 bg-[#0B1220] px-4 py-3 text-sm text-gray-400 transition hover:border-orange-500">
-                                    <Upload size={18} className="text-orange-400" />
-                                    <span className="min-w-0 truncate">
-                                        {logo ? logo.name : 'Choose logo image'}
-                                    </span>
-                                    <input
-                                        type="file"
-                                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                        className="hidden"
-                                        onChange={(event) =>
-                                            setLogo(event.target.files?.[0] || null)
-                                        }
-                                    />
-                                </label>
-                            </Field>
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
+                    {/* SECTION 02 */}
+                    <section className="sponsor-card sponsor-card-two rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
                         <SectionHeading
                             number="02"
                             icon={UserRound}
@@ -279,6 +380,7 @@ export default function SponsorRegistration() {
                         />
 
                         <div className="grid gap-5 sm:grid-cols-2">
+
                             <Field label="Full Name" required>
                                 <input
                                     className={inputClass}
@@ -316,13 +418,25 @@ export default function SponsorRegistration() {
                             <Field label="Mobile Number" required>
                                 <input
                                     className={inputClass}
-                                    type="tel"
+                                    type="text"
+                                    inputMode="numeric"
                                     name="phone"
                                     value={form.phone}
-                                    onChange={updateField}
+                                    onChange={(event) => {
+                                        const value = event.target.value
+                                            .replace(/\D/g, '')
+                                            .slice(0, 10)
+
+                                        setForm((previous) => ({
+                                            ...previous,
+                                            phone: value,
+                                        }))
+
+                                        setNotice('')
+                                    }}
                                     placeholder="10-digit mobile number"
-                                    pattern="[6-9][0-9]{9}"
                                     maxLength={10}
+                                    pattern="[6-9][0-9]{9}"
                                     title="Enter a valid 10-digit Indian mobile number"
                                     required
                                 />
@@ -341,10 +455,12 @@ export default function SponsorRegistration() {
                                     <option>WhatsApp</option>
                                 </select>
                             </Field>
+
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
+                    {/* SECTION 03 */}
+                    <section className="sponsor-card sponsor-card-three rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
                         <SectionHeading
                             number="03"
                             icon={Target}
@@ -361,8 +477,8 @@ export default function SponsorRegistration() {
                                     return (
                                         <label
                                             key={option.title}
-                                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${selected
-                                                ? 'border-orange-500 bg-orange-500/10'
+                                            className={`sponsor-option flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${selected
+                                                ? 'selected border-orange-500 bg-orange-500/10'
                                                 : 'border-white/10 bg-[#0B1220] hover:border-white/25'
                                                 }`}
                                         >
@@ -375,10 +491,12 @@ export default function SponsorRegistration() {
                                                 required
                                                 className="mt-1 accent-orange-500"
                                             />
+
                                             <span>
                                                 <span className="block text-sm font-semibold text-white">
                                                     {option.title}
                                                 </span>
+
                                                 <span className="mt-1 block text-xs leading-5 text-gray-400">
                                                     {option.description}
                                                 </span>
@@ -390,6 +508,7 @@ export default function SponsorRegistration() {
                         </Field>
 
                         <div className="mt-6 grid gap-5 sm:grid-cols-2">
+
                             <Field label="Estimated Sponsorship Budget" required>
                                 <select
                                     className={inputClass}
@@ -424,6 +543,7 @@ export default function SponsorRegistration() {
                                     <option>To be discussed</option>
                                 </select>
                             </Field>
+
                         </div>
 
                         <div className="mt-6">
@@ -432,13 +552,11 @@ export default function SponsorRegistration() {
                                     {promotionOptions.map((option) => (
                                         <label
                                             key={option}
-                                            className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-[#0B1220] px-4 py-3 text-sm text-gray-300 transition hover:border-orange-500/50"
+                                            className="sponsor-promotion flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-[#0B1220] px-4 py-3 text-sm text-gray-300 transition hover:border-orange-500/50"
                                         >
                                             <input
                                                 type="checkbox"
-                                                checked={form.promotionPreferences.includes(
-                                                    option
-                                                )}
+                                                checked={form.promotionPreferences.includes(option)}
                                                 onChange={() => togglePromotion(option)}
                                                 className="h-4 w-4 accent-orange-500"
                                             />
@@ -460,6 +578,7 @@ export default function SponsorRegistration() {
                                     maxLength={1000}
                                     placeholder="Tell us about your sponsorship goals, expectations or any specific requirements..."
                                 />
+
                                 <p className="mt-2 text-right text-xs text-gray-500">
                                     {form.message.length}/1000 characters
                                 </p>
@@ -467,7 +586,8 @@ export default function SponsorRegistration() {
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
+                    {/* SECTION 04 */}
+                    <section className="sponsor-card sponsor-card-four rounded-2xl border border-white/10 bg-[#111B2E] p-5 sm:p-8">
                         <SectionHeading
                             number="04"
                             icon={CheckCircle2}
@@ -476,6 +596,7 @@ export default function SponsorRegistration() {
                         />
 
                         <div className="space-y-4">
+
                             <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-gray-300">
                                 <input
                                     type="checkbox"
@@ -485,6 +606,7 @@ export default function SponsorRegistration() {
                                     required
                                     className="mt-1 h-4 w-4 shrink-0 accent-orange-500"
                                 />
+
                                 <span>
                                     I confirm that the information provided is accurate
                                     to the best of my knowledge.
@@ -500,46 +622,55 @@ export default function SponsorRegistration() {
                                     onChange={updateField}
                                     className="mt-1 h-4 w-4 shrink-0 accent-orange-500"
                                 />
+
                                 <span>
                                     I agree to be contacted by the ESCL team regarding
                                     this sponsorship enquiry.
                                 </span>
                             </label>
+
                         </div>
 
-                        <div className="mt-7 rounded-xl border border-white/10 bg-[#0B1220] p-4 text-xs leading-5 text-gray-400">
-                            <strong className="text-gray-300">Please note:</strong>{' '}
-                            This form is currently a frontend preview. No enquiry,
-                            company logo or personal details will be sent to or saved
-                            on the server until backend integration is implemented.
+                        <div className="mt-7 rounded-xl border border-orange-500/20 bg-[#0B1220] p-4 text-xs leading-5 text-gray-400">
+                            <strong className="text-orange-300">Please note:</strong>{' '}
+                            Your sponsorship enquiry will be securely submitted to ESCL.
+                            Our team will review your details and contact you regarding
+                            the next steps.
                         </div>
 
-                        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        {/* Premium Submit Area */}
+                        <div className="sponsor-submit-area mt-8 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
+
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setForm(initialForm)
-                                    setLogo(null)
-                                    setNotice('')
-                                }}
-                                className="rounded-xl border border-white/15 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/5"
+                                onClick={handleReset}
+                                disabled={isSubmitting}
+                                className="sponsor-reset-btn rounded-xl border border-white/15 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Reset Form
                             </button>
 
                             <button
                                 type="submit"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[#111B2E]"
+                                disabled={isSubmitting}
+                                className="sponsor-submit-btn inline-flex items-center justify-center gap-3 rounded-xl px-8 py-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <Send size={17} />
-                                Preview Sponsorship Enquiry
+                                <span>
+                                    {isSubmitting
+                                        ? 'Submitting Enquiry...'
+                                        : 'Submit Sponsorship Enquiry'}
+                                </span>
+                                <Send size={18} />
                             </button>
+
                         </div>
                     </section>
                 </form>
 
-                <footer className="py-8 text-center text-xs text-gray-500">
+                <footer className="sponsor-footer py-8 text-center text-xs text-gray-500">
                     ESCL · Engineering Students Cricket League
+                    <span className="mx-2 text-orange-500">✦</span>
+                    Building Partnerships Through Cricket
                 </footer>
             </div>
         </main>
